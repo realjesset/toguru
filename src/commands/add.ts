@@ -4,7 +4,7 @@ import { Store } from "../core/store";
 import type { Provider } from "../providers/types";
 import { MultiAccountError } from "../utils/errors";
 import { logger } from "../utils/logger";
-import { slugify, validateAccountName } from "../utils/strings";
+import { validateAccountName } from "../utils/strings";
 import { resolveProvider } from "./shared";
 
 interface AddOptions {
@@ -33,7 +33,7 @@ export async function runAdd(provider: Provider, options: AddOptions = {}): Prom
   if (!name) {
     name = await input({
       message: "Name this account",
-      default: suggested ? slugify(suggested) : undefined,
+      default: suggested,
       validate: validateAccountName,
     });
   } else {

@@ -1,19 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { slugify, validateAccountName } from "../src/utils/strings";
-
-describe("slugify", () => {
-  test("strips the email domain and lowercases", () => {
-    expect(slugify("Alice.Smith@Example.com")).toBe("alice-smith");
-  });
-
-  test("collapses non-alphanumeric runs into single dashes", () => {
-    expect(slugify("  My  Work__Account!! ")).toBe("my-work-account");
-  });
-});
+import { validateAccountName } from "../src/utils/strings";
 
 describe("validateAccountName", () => {
-  test("accepts safe names", () => {
+  test("accepts safe names, including emails", () => {
     expect(validateAccountName("work-1.account_2")).toBe(true);
+    expect(validateAccountName("you@example.com")).toBe(true);
+    expect(validateAccountName("me+work@example.com")).toBe(true);
   });
 
   test("rejects empty and unsafe names", () => {

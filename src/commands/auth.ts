@@ -5,7 +5,7 @@ import { providers } from "../providers/registry";
 import type { Provider } from "../providers/types";
 import { MultiAccountError } from "../utils/errors";
 import { logger } from "../utils/logger";
-import { slugify, validateAccountName } from "../utils/strings";
+import { validateAccountName } from "../utils/strings";
 import { resolveProvider } from "./shared";
 
 /**
@@ -66,7 +66,7 @@ export async function runAuth(provider: Provider, name?: string): Promise<void> 
     const suggested = await provider.suggestLabel?.();
     target = await input({
       message: "Save this account as",
-      default: suggested ? slugify(suggested) : undefined,
+      default: suggested,
       validate: validateAccountName,
     });
   }
