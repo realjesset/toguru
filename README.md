@@ -26,10 +26,10 @@ Saved accounts live in `~/.toguru/store.json` (override with
 
 ```bash
 # with bun
-bun add -g toguru
+bun add -g toguru-cli
 
 # or npm / pnpm
-npm install -g toguru
+npm install -g toguru-cli
 ```
 
 This exposes two commands: `toguru` and the short alias `tg`.
@@ -159,7 +159,7 @@ parsed locally from the (unverified) `id_token` purely for display.
 The CLI is built on a small, typed core you can drive directly:
 
 ```ts
-import { Store, providers } from "toguru";
+import { Store, providers } from "toguru-cli";
 
 const store = await Store.load();
 const account = store.get("claude", "work");

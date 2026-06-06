@@ -4,7 +4,7 @@
  *
  * @example
  * ```ts
- * import { Store, providers } from "toguru";
+ * import { Store, providers } from "toguru-cli";
  *
  * const store = await Store.load();
  * const claude = providers.claude;
