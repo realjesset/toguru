@@ -2,7 +2,7 @@ import { confirm, input } from "@inquirer/prompts";
 import { Command } from "commander";
 import { Store } from "../core/store";
 import type { Provider } from "../providers/types";
-import { MultiAccountError } from "../utils/errors";
+import { ToguruError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { validateAccountName } from "../utils/strings";
 import { resolveProvider } from "./shared";
@@ -22,7 +22,7 @@ interface AddOptions {
 export async function runAdd(provider: Provider, options: AddOptions = {}): Promise<void> {
   const credential = await provider.readActive();
   if (!credential) {
-    throw new MultiAccountError(
+    throw new ToguruError(
       `No active ${provider.displayName} session found.`,
       `Log in with the ${provider.id} CLI first, then run this again.`,
     );
@@ -39,7 +39,7 @@ export async function runAdd(provider: Provider, options: AddOptions = {}): Prom
   } else {
     const valid = validateAccountName(name);
     if (valid !== true) {
-      throw new MultiAccountError(valid);
+      throw new ToguruError(valid);
     }
   }
 

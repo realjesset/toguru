@@ -4,7 +4,7 @@
  *
  * @example
  * ```ts
- * import { Store, providers } from "multi-account";
+ * import { Store, providers } from "toguru";
  *
  * const store = await Store.load();
  * const claude = providers.claude;
@@ -33,4 +33,4 @@ export type {
 } from "./providers/types";
 
 // Errors
-export { isMultiAccountError, MultiAccountError } from "./utils/errors";
+export { isToguruError, ToguruError } from "./utils/errors";

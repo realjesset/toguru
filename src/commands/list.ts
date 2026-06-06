@@ -48,7 +48,7 @@ export async function runList(providerIdsToShow: ProviderId[], options: ListOpti
     const activeName = store.active(id);
     logger.out(pc.bold(pc.cyan(providers[id].displayName)));
     if (accounts.length === 0) {
-      logger.out(pc.dim("  (no accounts — run `multi-account add`)"));
+      logger.out(pc.dim("  (no accounts — run `toguru add`)"));
     } else {
       for (const account of accounts) {
         const meta = describePlan(id, account);

@@ -12,15 +12,15 @@ export function homeDir(): string {
 }
 
 /**
- * Directory where multi-account stores its own data (the account vault).
- * Override with the `MULTI_ACCOUNT_HOME` environment variable.
+ * Directory where toguru stores its own data (the account vault).
+ * Override with the `TOGURU_HOME` environment variable.
  */
 export function dataDir(): string {
-  const override = process.env.MULTI_ACCOUNT_HOME?.trim();
+  const override = process.env.TOGURU_HOME?.trim();
   if (override) {
     return path.resolve(override);
   }
-  return path.join(os.homedir(), ".multi-account");
+  return path.join(os.homedir(), ".toguru");
 }
 
 /** Path to the JSON vault that holds every saved account. */

@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { Store, type StoredAccount } from "../core/store";
 import type { Provider } from "../providers/types";
-import { MultiAccountError } from "../utils/errors";
+import { ToguruError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { pickAccount, resolveProvider } from "./shared";
 
@@ -15,9 +15,9 @@ export async function runSwitch(provider: Provider, name?: string): Promise<void
   if (name) {
     const found = store.get(provider.id, name);
     if (!found) {
-      throw new MultiAccountError(
+      throw new ToguruError(
         `No saved ${provider.displayName} account named "${name}".`,
-        `See your accounts with: multi-account list ${provider.id}`,
+        `See your accounts with: toguru list ${provider.id}`,
       );
     }
     account = found;

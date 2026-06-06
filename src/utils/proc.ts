@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { isWindows } from "../core/paths";
-import { MultiAccountError } from "./errors";
+import { ToguruError } from "./errors";
 
 /**
  * Run a child process with inherited stdio so the user interacts with it
@@ -17,7 +17,7 @@ export function runInherit(command: string, args: string[]): Promise<void> {
     child.on("error", (error) => {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         reject(
-          new MultiAccountError(
+          new ToguruError(
             `Could not find "${command}" on your PATH.`,
             `Install the ${command} CLI and try again.`,
           ),
@@ -31,7 +31,7 @@ export function runInherit(command: string, args: string[]): Promise<void> {
         resolve();
         return;
       }
-      reject(new MultiAccountError(`"${command} ${args.join(" ")}" exited with code ${code ?? "unknown"}.`));
+      reject(new ToguruError(`"${command} ${args.join(" ")}" exited with code ${code ?? "unknown"}.`));
     });
   });
 }

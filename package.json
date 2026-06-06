@@ -1,8 +1,10 @@
 {
-  "name": "multi-account",
+  "name": "toguru",
   "version": "0.1.0",
-  "description": "One CLI to swap between multiple Claude Code (Anthropic) and Codex (OpenAI) accounts.",
+  "description": "toguru (トグル, Japanese for \"toggle\") — one CLI to swap between multiple Claude Code (Anthropic) and Codex (OpenAI) accounts.",
   "keywords": [
+    "toguru",
+    "toggle",
     "cli",
     "claude",
     "claude-code",
@@ -16,21 +18,21 @@
   ],
   "license": "MIT",
   "author": "realjesset <you@example.com>",
-  "homepage": "https://github.com/realjesset/multi-account#readme",
+  "homepage": "https://github.com/realjesset/toguru#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/realjesset/multi-account.git"
+    "url": "git+https://github.com/realjesset/toguru.git"
   },
   "bugs": {
-    "url": "https://github.com/realjesset/multi-account/issues"
+    "url": "https://github.com/realjesset/toguru/issues"
   },
   "publishConfig": {
     "access": "public"
   },
   "type": "module",
   "bin": {
-    "multi-account": "dist/cli.js",
-    "macc": "dist/cli.js"
+    "toguru": "dist/cli.js",
+    "tg": "dist/cli.js"
   },
   "main": "dist/index.js",
   "module": "dist/index.js",

@@ -3,14 +3,14 @@ import { Command } from "commander";
 import { Store } from "../core/store";
 import { providers } from "../providers/registry";
 import type { Provider } from "../providers/types";
-import { MultiAccountError } from "../utils/errors";
+import { ToguruError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { validateAccountName } from "../utils/strings";
 import { resolveProvider } from "./shared";
 
 /**
  * Log in to a provider through its own OAuth flow and save the resulting session
- * as a macc profile — in one step. This is the easy path: no separate "log in,
+ * as a toguru profile — in one step. This is the easy path: no separate "log in,
  * then `add`" dance.
  *
  * Behaviour by `name`:
@@ -23,9 +23,9 @@ import { resolveProvider } from "./shared";
  */
 export async function runAuth(provider: Provider, name?: string): Promise<void> {
   if (!provider.login) {
-    throw new MultiAccountError(
-      `${provider.displayName} does not support logging in through macc.`,
-      `Log in with its own CLI, then run: macc add ${provider.id}`,
+    throw new ToguruError(
+      `${provider.displayName} does not support logging in through toguru.`,
+      `Log in with its own CLI, then run: toguru add ${provider.id}`,
     );
   }
 
@@ -33,7 +33,7 @@ export async function runAuth(provider: Provider, name?: string): Promise<void> 
   if (requested) {
     const valid = validateAccountName(requested);
     if (valid !== true) {
-      throw new MultiAccountError(valid);
+      throw new ToguruError(valid);
     }
   }
 
@@ -55,7 +55,7 @@ export async function runAuth(provider: Provider, name?: string): Promise<void> 
 
   const credential = await provider.readActive();
   if (!credential) {
-    throw new MultiAccountError(
+    throw new ToguruError(
       `Login finished but no active ${provider.displayName} session was found.`,
       "If the browser flow was cancelled or failed, try again.",
     );
@@ -85,7 +85,7 @@ export async function runAuth(provider: Provider, name?: string): Promise<void> 
 }
 
 /**
- * The per-provider command groups: `macc claude …` and `macc codex …`, each
+ * The per-provider command groups: `toguru claude …` and `toguru codex …`, each
  * exposing `auth [name]`.
  */
 export function providerCommands(): Command[] {
@@ -102,7 +102,7 @@ export function providerCommands(): Command[] {
   });
 }
 
-/** Top-level `macc auth [provider] [name]`, equivalent to `macc <provider> auth`. */
+/** Top-level `toguru auth [provider] [name]`, equivalent to `toguru <provider> auth`. */
 export function authCommand(): Command {
   return new Command("auth")
     .description("Log in to a provider and save the session as a profile")

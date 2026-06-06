@@ -1,9 +1,12 @@
-# multi-account
+# toguru トグル
 
 > One CLI to swap between multiple **Claude Code** (Anthropic) and **Codex** (OpenAI) accounts.
 
+**toguru** (トグル) is Japanese for *"toggle"* — and that's exactly what it does:
+toggle between accounts.
+
 Tired of logging out and back in to switch between your personal and work
-Claude/Codex subscriptions? `multi-account` saves each signed-in session and
+Claude/Codex subscriptions? `toguru` saves each signed-in session and
 lets you flip between them in a second — from a single tool, on macOS, Linux,
 and Windows.
 
@@ -14,8 +17,8 @@ It is a thin, safe layer over the credentials your existing CLIs already write:
 | Claude Code | macOS Keychain (`Claude Code-credentials`) · `~/.claude/.credentials.json` elsewhere |
 | Codex | `~/.codex/auth.json` (override the dir with `CODEX_HOME`) |
 
-Saved accounts live in `~/.multi-account/store.json` (override with
-`MULTI_ACCOUNT_HOME`), written atomically with `0600` permissions.
+Saved accounts live in `~/.toguru/store.json` (override with
+`TOGURU_HOME`), written atomically with `0600` permissions.
 
 ---
 
@@ -23,13 +26,13 @@ Saved accounts live in `~/.multi-account/store.json` (override with
 
 ```bash
 # with bun
-bun add -g multi-account
+bun add -g toguru
 
 # or npm / pnpm
-npm install -g multi-account
+npm install -g toguru
 ```
 
-This exposes two commands: `multi-account` and the short alias `macc`.
+This exposes two commands: `toguru` and the short alias `tg`.
 
 ### Run from source (Bun)
 
@@ -46,35 +49,35 @@ bun test                  # run the test suite
 
 ```bash
 # 1. Log in AND save in one step (opens your browser):
-macc claude auth work        # or: macc codex auth work
+toguru claude auth work        # or: toguru codex auth work
 
 # 2. Add another account the same way:
-macc claude auth personal
+toguru claude auth personal
 
 # 3. Switch any time:
-macc switch claude personal
-macc switch claude           # interactive picker
+toguru switch claude personal
+toguru switch claude           # interactive picker
 
 # See where things stand:
-macc list
-macc current
+toguru list
+toguru current
 ```
 
 If a saved profile's token goes stale, re-authenticate it **in place** — same
 name, fresh session:
 
 ```bash
-macc claude auth work        # re-runs login and updates the "work" profile
+toguru claude auth work        # re-runs login and updates the "work" profile
 ```
 
 Already logged in through the provider's own CLI? You can still snapshot the
-current session without re-authenticating: `macc add claude work`.
+current session without re-authenticating: `toguru add claude work`.
 
 Profiles default to your **account email** — log in as `you@example.com`
 and the profile is named that (just press Enter at the prompt, or pass your own
 name).
 
-Run `macc` (or `macc status`) with no arguments for the **interactive hub**:
+Run `toguru` (or `toguru status`) with no arguments for the **interactive hub**:
 arrow-key through every saved profile across both providers and pick one to
 switch / re-authenticate / rename / remove — or log in to a new account.
 
@@ -93,37 +96,37 @@ Exit
 
 | Command | Description |
 | --- | --- |
-| `macc` / `macc status` | Interactive hub: arrow-key a profile → switch / re-auth / rename / remove (alias: `current`) |
-| `macc <provider> auth [name]` | **Log in (or re-authenticate a profile) and save it** — e.g. `macc codex auth` |
-| `macc auth [provider] [name]` | Same as above, with the provider as an argument |
-| `macc switch [provider] [name]` | Activate a saved account (alias: `use`) |
-| `macc add [provider] [name]` | Save the *current* live session as a named account (no re-login) |
-| `macc list [provider]` | List saved accounts (alias: `ls`) |
-| `macc current [provider]` | Show active account + live-sync status, then open the hub on a TTY (alias: `status`; use `--json` for plain output) |
-| `macc rename [provider] [old] [new]` | Rename a saved account (alias: `mv`) |
-| `macc remove [provider] [name]` | Forget a saved account (alias: `rm`) |
-| `macc export [provider]` | Export accounts as JSON |
-| `macc import <file>` | Import accounts from a JSON export |
+| `toguru` / `toguru status` | Interactive hub: arrow-key a profile → switch / re-auth / rename / remove (alias: `current`) |
+| `toguru <provider> auth [name]` | **Log in (or re-authenticate a profile) and save it** — e.g. `toguru codex auth` |
+| `toguru auth [provider] [name]` | Same as above, with the provider as an argument |
+| `toguru switch [provider] [name]` | Activate a saved account (alias: `use`) |
+| `toguru add [provider] [name]` | Save the *current* live session as a named account (no re-login) |
+| `toguru list [provider]` | List saved accounts (alias: `ls`) |
+| `toguru current [provider]` | Show active account + live-sync status, then open the hub on a TTY (alias: `status`; use `--json` for plain output) |
+| `toguru rename [provider] [old] [new]` | Rename a saved account (alias: `mv`) |
+| `toguru remove [provider] [name]` | Forget a saved account (alias: `rm`) |
+| `toguru export [provider]` | Export accounts as JSON |
+| `toguru import <file>` | Import accounts from a JSON export |
 
 `provider` is `claude` or `codex`. Omit any positional argument and you'll be
 prompted for it.
 
 ### Useful flags
 
-- `macc add --label <email>` — set a custom label; `--activate` to switch to it immediately; `--force` to overwrite.
-- `macc list --json` / `macc current --json` — machine-readable output for scripts.
-- `macc remove --yes` — skip the confirmation prompt.
-- `macc export --out accounts.json` — write to a file; `macc import --overwrite` to replace existing entries.
+- `toguru add --label <email>` — set a custom label; `--activate` to switch to it immediately; `--force` to overwrite.
+- `toguru list --json` / `toguru current --json` — machine-readable output for scripts.
+- `toguru remove --yes` — skip the confirmation prompt.
+- `toguru export --out accounts.json` — write to a file; `toguru import --overwrite` to replace existing entries.
 - `-v, --version`, `-h, --help` everywhere.
 
 ### Examples
 
 ```bash
-macc add codex --label me@work.com --activate
-macc switch codex            # pick interactively
-macc list --json | jq '.[0].accounts'
-macc export --out backup.json   # ⚠️ contains credentials — keep it private
-macc import backup.json
+toguru add codex --label me@work.com --activate
+toguru switch codex            # pick interactively
+toguru list --json | jq '.[0].accounts'
+toguru export --out backup.json   # ⚠️ contains credentials — keep it private
+toguru import backup.json
 ```
 
 ---
@@ -156,7 +159,7 @@ parsed locally from the (unverified) `id_token` purely for display.
 The CLI is built on a small, typed core you can drive directly:
 
 ```ts
-import { Store, providers } from "multi-account";
+import { Store, providers } from "toguru";
 
 const store = await Store.load();
 const account = store.get("claude", "work");
@@ -166,7 +169,7 @@ if (account) {
 }
 ```
 
-Exports: `Store`, `providers`, `getProvider`, `providerIds`, `MultiAccountError`,
+Exports: `Store`, `providers`, `getProvider`, `providerIds`, `ToguruError`,
 `createProgram`, plus all related types.
 
 ---

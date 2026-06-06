@@ -2,7 +2,7 @@ import { confirm } from "@inquirer/prompts";
 import { Command } from "commander";
 import { Store, type StoredAccount } from "../core/store";
 import type { Provider } from "../providers/types";
-import { MultiAccountError } from "../utils/errors";
+import { ToguruError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { pickAccount, resolveProvider } from "./shared";
 
@@ -20,7 +20,7 @@ export async function runRemove(provider: Provider, name?: string, options: Remo
   if (name) {
     const found = store.get(provider.id, name);
     if (!found) {
-      throw new MultiAccountError(`No saved ${provider.displayName} account named "${name}".`);
+      throw new ToguruError(`No saved ${provider.displayName} account named "${name}".`);
     }
     account = found;
   } else {

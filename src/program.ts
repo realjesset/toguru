@@ -20,7 +20,7 @@ export function createProgram(): Command {
   const program = new Command();
 
   program
-    .name("multi-account")
+    .name("toguru")
     .description(pkg.description)
     .version(pkg.version, "-v, --version", "print the version number")
     .showHelpAfterError("(add --help for usage)")
@@ -36,7 +36,7 @@ export function createProgram(): Command {
   program.addCommand(exportCommand());
   program.addCommand(importCommand());
 
-  // Per-provider command groups: `macc claude auth`, `macc codex auth`, …
+  // Per-provider command groups: `toguru claude auth`, `toguru codex auth`, …
   for (const command of providerCommands()) {
     program.addCommand(command);
   }

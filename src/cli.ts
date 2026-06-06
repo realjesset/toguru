@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { runManage } from "./commands/manage";
 import { createProgram } from "./program";
-import { isMultiAccountError } from "./utils/errors";
+import { isToguruError } from "./utils/errors";
 import { logger } from "./utils/logger";
 
 async function main(argv: string[]): Promise<void> {
@@ -28,7 +28,7 @@ main(process.argv).catch((error: unknown) => {
     logger.info("Cancelled.");
     process.exit(130);
   }
-  if (isMultiAccountError(error)) {
+  if (isToguruError(error)) {
     logger.error(error.message);
     if (error.hint) {
       logger.hint(error.hint);

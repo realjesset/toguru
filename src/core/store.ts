@@ -1,4 +1,4 @@
-import { MultiAccountError } from "../utils/errors";
+import { ToguruError } from "../utils/errors";
 import { readJson, writeJson } from "../utils/fs";
 import type { Credential, ProviderId } from "../providers/types";
 import { storeFile } from "./paths";
@@ -123,7 +123,7 @@ export class Store {
   async setActive(provider: ProviderId, name: string): Promise<void> {
     const state = this.state(provider);
     if (!state.accounts[name]) {
-      throw new MultiAccountError(`No saved account named "${name}".`);
+      throw new ToguruError(`No saved account named "${name}".`);
     }
     state.active = name;
     await this.save();
@@ -133,7 +133,7 @@ export class Store {
   async remove(provider: ProviderId, name: string): Promise<void> {
     const state = this.state(provider);
     if (!state.accounts[name]) {
-      throw new MultiAccountError(`No saved account named "${name}".`);
+      throw new ToguruError(`No saved account named "${name}".`);
     }
     delete state.accounts[name];
     if (state.active === name) {
@@ -147,10 +147,10 @@ export class Store {
     const state = this.state(provider);
     const account = state.accounts[from];
     if (!account) {
-      throw new MultiAccountError(`No saved account named "${from}".`);
+      throw new ToguruError(`No saved account named "${from}".`);
     }
     if (state.accounts[to]) {
-      throw new MultiAccountError(`An account named "${to}" already exists.`);
+      throw new ToguruError(`An account named "${to}" already exists.`);
     }
     account.name = to;
     account.updatedAt = timestamp();

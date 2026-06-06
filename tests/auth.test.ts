@@ -9,12 +9,12 @@ import type { Credential, LoginOptions, Provider } from "../src/providers/types"
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), "macc-auth-"));
-  process.env.MULTI_ACCOUNT_HOME = dir;
+  dir = await mkdtemp(join(tmpdir(), "toguru-auth-"));
+  process.env.TOGURU_HOME = dir;
 });
 
 afterEach(async () => {
-  delete process.env.MULTI_ACCOUNT_HOME;
+  delete process.env.TOGURU_HOME;
   await rm(dir, { recursive: true, force: true });
 });
 

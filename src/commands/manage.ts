@@ -54,7 +54,7 @@ async function manageOne(target: Target): Promise<void> {
  * The interactive hub: list every saved profile across both providers and let
  * the user arrow-key to one and act on it (switch / re-auth / rename / remove),
  * or log in to a new account. Loops until the user exits. This backs both the
- * no-argument `macc` invocation and `macc status` on a TTY.
+ * no-argument `toguru` invocation and `toguru status` on a TTY.
  */
 export async function runManage(): Promise<void> {
   for (;;) {

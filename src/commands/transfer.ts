@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { Store, STORE_VERSION, type StoreData } from "../core/store";
 import { getProvider } from "../providers/registry";
 import type { ProviderId } from "../providers/types";
-import { MultiAccountError } from "../utils/errors";
+import { ToguruError } from "../utils/errors";
 import { readJson } from "../utils/fs";
 import { logger } from "../utils/logger";
 
@@ -43,12 +43,12 @@ export async function runExport(providerId: ProviderId | undefined, options: Exp
 export async function runImport(file: string, options: ImportOptions = {}): Promise<void> {
   const data = await readJson<StoreData>(file);
   if (!data || typeof data !== "object" || !data.providers) {
-    throw new MultiAccountError(`"${file}" is not a valid multi-account export.`);
+    throw new ToguruError(`"${file}" is not a valid toguru export.`);
   }
   if (typeof data.version === "number" && data.version > STORE_VERSION) {
-    throw new MultiAccountError(
+    throw new ToguruError(
       `Export was created by a newer version (schema v${data.version}).`,
-      "Upgrade multi-account and try again.",
+      "Upgrade toguru and try again.",
     );
   }
   const store = await Store.load();

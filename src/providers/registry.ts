@@ -1,4 +1,4 @@
-import { MultiAccountError } from "../utils/errors";
+import { ToguruError } from "../utils/errors";
 import { claudeProvider } from "./claude";
 import { codexProvider } from "./codex";
 import type { Provider, ProviderId } from "./types";
@@ -22,7 +22,7 @@ export function getProvider(id: string): Provider {
   if (isProviderId(id)) {
     return providers[id];
   }
-  throw new MultiAccountError(
+  throw new ToguruError(
     `Unknown provider "${id}".`,
     `Valid providers are: ${providerIds.join(", ")}.`,
   );

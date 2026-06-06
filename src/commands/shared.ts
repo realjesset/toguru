@@ -3,7 +3,7 @@ import pc from "picocolors";
 import type { Store, StoredAccount } from "../core/store";
 import { getProvider, providerIds, providers } from "../providers/registry";
 import type { Provider } from "../providers/types";
-import { MultiAccountError } from "../utils/errors";
+import { ToguruError } from "../utils/errors";
 
 /**
  * Resolve a provider from an optional argument, prompting interactively when it
@@ -46,9 +46,9 @@ export async function pickAccount(
 ): Promise<StoredAccount> {
   const accounts = store.list(provider.id);
   if (accounts.length === 0) {
-    throw new MultiAccountError(
+    throw new ToguruError(
       `No saved ${provider.displayName} accounts yet.`,
-      `Add one with: multi-account add ${provider.id}`,
+      `Add one with: toguru add ${provider.id}`,
     );
   }
   const activeName = store.active(provider.id);

@@ -2,7 +2,7 @@ import { input } from "@inquirer/prompts";
 import { Command } from "commander";
 import { Store } from "../core/store";
 import type { Provider } from "../providers/types";
-import { MultiAccountError } from "../utils/errors";
+import { ToguruError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { validateAccountName } from "../utils/strings";
 import { pickAccount, resolveProvider } from "./shared";
@@ -14,7 +14,7 @@ export async function runRename(provider: Provider, from?: string, to?: string):
     ? store.get(provider.id, from)
     : await pickAccount(store, provider, `Rename which ${provider.displayName} account?`);
   if (!source) {
-    throw new MultiAccountError(`No saved ${provider.displayName} account named "${from}".`);
+    throw new ToguruError(`No saved ${provider.displayName} account named "${from}".`);
   }
 
   let target = to?.trim();
@@ -26,7 +26,7 @@ export async function runRename(provider: Provider, from?: string, to?: string):
   } else {
     const valid = validateAccountName(target);
     if (valid !== true) {
-      throw new MultiAccountError(valid);
+      throw new ToguruError(valid);
     }
   }
 
