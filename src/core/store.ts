@@ -1,5 +1,6 @@
 import { ToguruError } from "../utils/errors";
 import { readJson, writeJson } from "../utils/fs";
+import { isProviderId } from "../providers/registry";
 import type { Credential, ProviderId } from "../providers/types";
 import { storeFile } from "./paths";
 
@@ -193,4 +194,73 @@ export class Store {
     await this.save();
     return imported;
   }
+}
+
+/** Validate one untrusted account entry, returning a clean copy or `null`. */
+function validateAccount(name: string, raw: unknown): StoredAccount | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const entry = raw as Record<string, unknown>;
+  // A credential is the whole point of an account; drop entries without one.
+  if (!entry.credential || typeof entry.credential !== "object") {
+    return null;
+  }
+  const account: StoredAccount = {
+    name,
+    credential: entry.credential as Credential,
+    addedAt: typeof entry.addedAt === "string" ? entry.addedAt : timestamp(),
+    updatedAt: typeof entry.updatedAt === "string" ? entry.updatedAt : timestamp(),
+  };
+  if (typeof entry.label === "string") {
+    account.label = entry.label;
+  }
+  return account;
+}
+
+/**
+ * Validate and normalize untrusted data (e.g. an imported file) into a
+ * {@link StoreData}. Unknown providers and malformed accounts are dropped rather
+ * than trusted; a structurally invalid payload throws a {@link ToguruError}.
+ */
+export function validateStoreData(raw: unknown): StoreData {
+  if (!raw || typeof raw !== "object") {
+    throw new ToguruError("Not a valid toguru export (expected a JSON object).");
+  }
+  const root = raw as Record<string, unknown>;
+  const version = typeof root.version === "number" ? root.version : STORE_VERSION;
+  if (version > STORE_VERSION) {
+    throw new ToguruError(
+      `Export was created by a newer version (schema v${version}).`,
+      "Upgrade toguru and try again.",
+    );
+  }
+  if (!root.providers || typeof root.providers !== "object") {
+    throw new ToguruError("Not a valid toguru export (missing a `providers` object).");
+  }
+
+  const providers: StoreData["providers"] = {};
+  for (const [providerId, stateRaw] of Object.entries(root.providers as Record<string, unknown>)) {
+    if (!isProviderId(providerId) || !stateRaw || typeof stateRaw !== "object") {
+      continue;
+    }
+    const state = stateRaw as Record<string, unknown>;
+    const accounts: Record<string, StoredAccount> = {};
+    if (state.accounts && typeof state.accounts === "object") {
+      for (const [name, accountRaw] of Object.entries(state.accounts as Record<string, unknown>)) {
+        const account = validateAccount(name, accountRaw);
+        if (account) {
+          accounts[name] = account;
+        }
+      }
+    }
+    const providerState: ProviderState = { accounts };
+    // Only honor `active` when it points at an account that survived validation.
+    if (typeof state.active === "string" && accounts[state.active]) {
+      providerState.active = state.active;
+    }
+    providers[providerId] = providerState;
+  }
+
+  return { version: STORE_VERSION, providers };
 }

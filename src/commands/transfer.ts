@@ -1,10 +1,11 @@
+import { readFile } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
 import { Command } from "commander";
-import { Store, STORE_VERSION, type StoreData } from "../core/store";
+import { Store, type StoreData, validateStoreData } from "../core/store";
 import { getProvider } from "../providers/registry";
 import type { ProviderId } from "../providers/types";
 import { ToguruError } from "../utils/errors";
-import { readJson } from "../utils/fs";
+import { pathExists } from "../utils/fs";
 import { logger } from "../utils/logger";
 
 interface ExportOptions {
@@ -41,16 +42,17 @@ export async function runExport(providerId: ProviderId | undefined, options: Exp
 
 /** Import accounts from a previously exported file, merging into the vault. */
 export async function runImport(file: string, options: ImportOptions = {}): Promise<void> {
-  const data = await readJson<StoreData>(file);
-  if (!data || typeof data !== "object" || !data.providers) {
-    throw new ToguruError(`"${file}" is not a valid toguru export.`);
+  if (!(await pathExists(file))) {
+    throw new ToguruError(`File not found: ${file}`);
   }
-  if (typeof data.version === "number" && data.version > STORE_VERSION) {
-    throw new ToguruError(
-      `Export was created by a newer version (schema v${data.version}).`,
-      "Upgrade toguru and try again.",
-    );
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await readFile(file, "utf8"));
+  } catch {
+    throw new ToguruError(`"${file}" is not valid JSON.`);
   }
+  // Validates structure, drops unknown providers / credential-less entries.
+  const data = validateStoreData(parsed);
   const store = await Store.load();
   const count = await store.merge(data, options.overwrite ?? false);
   logger.success(`Imported ${count} account${count === 1 ? "" : "s"} from ${file}.`);

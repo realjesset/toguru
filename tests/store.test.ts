@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Store } from "../src/core/store";
+import { Store, validateStoreData } from "../src/core/store";
 
 let dir: string;
 
@@ -96,5 +96,59 @@ describe("Store", () => {
     const imported = await store.merge(incoming, true);
     expect(imported).toBe(1);
     expect(store.get("codex", "alice")?.credential).toEqual({ token: "updated" });
+  });
+});
+
+describe("validateStoreData (A5: untrusted import hardening)", () => {
+  test("accepts a well-formed export and normalizes it", () => {
+    const data = validateStoreData({
+      version: 1,
+      providers: {
+        codex: {
+          active: "alice",
+          accounts: {
+            alice: { name: "alice", credential: { token: "a" }, label: "alice@x.com" },
+          },
+        },
+      },
+    });
+    expect(data.providers.codex?.accounts.alice?.credential).toEqual({ token: "a" });
+    expect(data.providers.codex?.active).toBe("alice");
+  });
+
+  test("rejects non-objects and missing providers", () => {
+    expect(() => validateStoreData(null)).toThrow();
+    expect(() => validateStoreData("nope")).toThrow();
+    expect(() => validateStoreData({ version: 1 })).toThrow();
+  });
+
+  test("rejects exports from a newer schema version", () => {
+    expect(() => validateStoreData({ version: 999, providers: {} })).toThrow();
+  });
+
+  test("drops unknown providers and credential-less accounts", () => {
+    const data = validateStoreData({
+      version: 1,
+      providers: {
+        bogus: { accounts: { x: { credential: { t: 1 } } } },
+        codex: {
+          accounts: {
+            good: { credential: { token: "a" } },
+            bad: { label: "no credential here" },
+          },
+        },
+      },
+    });
+    expect(Object.keys(data.providers)).toEqual(["codex"]);
+    expect(data.providers.codex?.accounts.good).toBeDefined();
+    expect(data.providers.codex?.accounts.bad).toBeUndefined();
+  });
+
+  test("ignores an `active` pointer to a dropped account", () => {
+    const data = validateStoreData({
+      version: 1,
+      providers: { codex: { active: "bad", accounts: { bad: { label: "x" } } } },
+    });
+    expect(data.providers.codex?.active).toBeUndefined();
   });
 });
