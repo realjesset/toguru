@@ -1,14 +1,14 @@
 import { select } from "@inquirer/prompts";
 import { runAdd } from "./add";
+import { runAuth } from "./auth";
 import { runCurrent } from "./current";
 import { runList } from "./list";
-import { runLogin } from "./login";
 import { runRemove } from "./remove";
 import { runRename } from "./rename";
 import { runSwitch } from "./switch";
 import { resolveProvider } from "./shared";
 
-type Action = "switch" | "add" | "login" | "list" | "current" | "rename" | "remove";
+type Action = "switch" | "auth" | "add" | "list" | "current" | "rename" | "remove";
 
 /**
  * The no-argument experience: pick a provider, then an action. Each action
@@ -21,8 +21,8 @@ export async function runInteractive(): Promise<void> {
     message: `${provider.displayName} — what would you like to do?`,
     choices: [
       { name: "Switch account", value: "switch" },
+      { name: "Log in / re-authenticate (opens browser)", value: "auth" },
       { name: "Save current session", value: "add" },
-      { name: "Log in & save a new account", value: "login" },
       { name: "List accounts", value: "list" },
       { name: "Show current account", value: "current" },
       { name: "Rename an account", value: "rename" },
@@ -34,11 +34,11 @@ export async function runInteractive(): Promise<void> {
     case "switch":
       await runSwitch(provider);
       return;
+    case "auth":
+      await runAuth(provider);
+      return;
     case "add":
       await runAdd(provider, { activate: true });
-      return;
-    case "login":
-      await runLogin(provider);
       return;
     case "list":
       await runList([provider.id]);

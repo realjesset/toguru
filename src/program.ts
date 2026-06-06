@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
 import { Command } from "commander";
 import { addCommand } from "./commands/add";
+import { authCommand, providerCommands } from "./commands/auth";
 import { currentCommand } from "./commands/current";
 import { listCommand } from "./commands/list";
-import { loginCommand } from "./commands/login";
 import { removeCommand } from "./commands/remove";
 import { renameCommand } from "./commands/rename";
 import { switchCommand } from "./commands/switch";
@@ -26,15 +26,20 @@ export function createProgram(): Command {
     .showHelpAfterError("(add --help for usage)")
     .configureHelp({ showGlobalOptions: true });
 
+  program.addCommand(authCommand());
   program.addCommand(switchCommand());
   program.addCommand(addCommand());
-  program.addCommand(loginCommand());
   program.addCommand(listCommand());
   program.addCommand(currentCommand());
   program.addCommand(renameCommand());
   program.addCommand(removeCommand());
   program.addCommand(exportCommand());
   program.addCommand(importCommand());
+
+  // Per-provider command groups: `macc claude auth`, `macc codex auth`, …
+  for (const command of providerCommands()) {
+    program.addCommand(command);
+  }
 
   return program;
 }
