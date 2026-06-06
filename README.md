@@ -1,0 +1,161 @@
+# multi-account
+
+> One CLI to swap between multiple **Claude Code** (Anthropic) and **Codex** (OpenAI) accounts.
+
+Tired of logging out and back in to switch between your personal and work
+Claude/Codex subscriptions? `multi-account` saves each signed-in session and
+lets you flip between them in a second — from a single tool, on macOS, Linux,
+and Windows.
+
+It is a thin, safe layer over the credentials your existing CLIs already write:
+
+| Provider | Live credential location |
+| --- | --- |
+| Claude Code | macOS Keychain (`Claude Code-credentials`) · `~/.claude/.credentials.json` elsewhere |
+| Codex | `~/.codex/auth.json` (override the dir with `CODEX_HOME`) |
+
+Saved accounts live in `~/.multi-account/store.json` (override with
+`MULTI_ACCOUNT_HOME`), written atomically with `0600` permissions.
+
+---
+
+## Install
+
+```bash
+# with bun
+bun add -g multi-account
+
+# or npm / pnpm
+npm install -g multi-account
+```
+
+This exposes two commands: `multi-account` and the short alias `macc`.
+
+### Run from source (Bun)
+
+```bash
+bun install
+bun run dev -- --help     # run the CLI in dev
+bun run build             # produce dist/
+bun test                  # run the test suite
+```
+
+---
+
+## Quick start
+
+```bash
+# 1. Log in to your first account using the provider's own CLI, then save it:
+claude            # sign in as you normally would
+macc add claude work
+
+# 2. Log in to another account (e.g. personal), then save it too:
+macc add claude personal
+
+# 3. Switch any time:
+macc switch claude personal
+macc switch claude          # interactive picker
+
+# See where things stand:
+macc list
+macc current
+```
+
+Run `macc` with **no arguments** for a fully interactive menu (powered by
+`@inquirer/prompts`).
+
+---
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `macc` | Interactive menu (pick provider → action) |
+| `macc switch [provider] [name]` | Activate a saved account (alias: `use`) |
+| `macc add [provider] [name]` | Save the current live session as a named account |
+| `macc login [provider] [name]` | Run the provider's login flow, then save it |
+| `macc list [provider]` | List saved accounts (alias: `ls`) |
+| `macc current [provider]` | Show the active account + live-sync status (alias: `status`) |
+| `macc rename [provider] [old] [new]` | Rename a saved account (alias: `mv`) |
+| `macc remove [provider] [name]` | Forget a saved account (alias: `rm`) |
+| `macc export [provider]` | Export accounts as JSON |
+| `macc import <file>` | Import accounts from a JSON export |
+
+`provider` is `claude` or `codex`. Omit any positional argument and you'll be
+prompted for it.
+
+### Useful flags
+
+- `macc add --label <email>` — set a custom label; `--activate` to switch to it immediately; `--force` to overwrite.
+- `macc list --json` / `macc current --json` — machine-readable output for scripts.
+- `macc remove --yes` — skip the confirmation prompt.
+- `macc export --out accounts.json` — write to a file; `macc import --overwrite` to replace existing entries.
+- `-v, --version`, `-h, --help` everywhere.
+
+### Examples
+
+```bash
+macc add codex --label me@work.com --activate
+macc switch codex            # pick interactively
+macc list --json | jq '.[0].accounts'
+macc export --out backup.json   # ⚠️ contains credentials — keep it private
+macc import backup.json
+```
+
+---
+
+## How it works
+
+- **`add`** reads whatever session your provider CLI currently holds and stores
+  a copy under a name you choose. Your live session is left untouched.
+- **`switch`** writes a saved credential back into the provider's live location,
+  making that account active. On macOS, Claude credentials round-trip through
+  the Keychain; everywhere else they are plain files.
+- **`current`** compares the live session against what it last activated and
+  warns if they have drifted (e.g. a token was refreshed by the provider).
+
+Nothing ever calls a remote API. Labels and plan names shown for Codex are
+parsed locally from the (unverified) `id_token` purely for display.
+
+> ⚠️ **Security:** saved accounts and exports contain real OAuth tokens. The
+> vault is created with `0600` permissions; treat exports as secrets.
+
+---
+
+## Use as a library
+
+The CLI is built on a small, typed core you can drive directly:
+
+```ts
+import { Store, providers } from "multi-account";
+
+const store = await Store.load();
+const account = store.get("claude", "work");
+if (account) {
+  await providers.claude.writeActive(account.credential);
+  await store.setActive("claude", "work");
+}
+```
+
+Exports: `Store`, `providers`, `getProvider`, `providerIds`, `MultiAccountError`,
+`createProgram`, plus all related types.
+
+---
+
+## Project layout
+
+```
+src/
+  cli.ts            # executable entrypoint (#!/usr/bin/env node)
+  program.ts        # wires commander commands together
+  index.ts          # public library surface
+  commands/         # one file per command (+ interactive menu, shared prompts)
+  providers/        # provider abstraction + claude/codex implementations
+  core/             # paths, keychain, account vault (Store)
+  utils/            # fs, jwt, logger, errors, strings, process helpers
+tests/              # bun:test unit tests
+```
+
+## License
+
+[MIT](./LICENSE)
