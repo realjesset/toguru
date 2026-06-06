@@ -144,7 +144,10 @@ toguru import backup.json
   a copy under a name you choose. Your live session is left untouched.
 - **`switch`** writes a saved credential back into the provider's live location,
   making that account active. On macOS, Claude credentials round-trip through
-  the Keychain; everywhere else they are plain files.
+  the Keychain; everywhere else they are plain files. For Claude, toguru also
+  restores the signed-in identity (`oauthAccount` in `~/.claude.json`) so the
+  displayed account, email and org match the active tokens — not just the
+  credentials.
 - **`current`** compares the live session against what it last activated and
   warns if they have drifted (e.g. a token was refreshed by the provider).
 
