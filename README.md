@@ -1,5 +1,7 @@
 # toguru トグル
 
+[![npm version](https://img.shields.io/npm/v/toguru-cli.svg)](https://www.npmjs.com/package/toguru-cli)
+
 > One CLI to swap between multiple **Claude Code** (Anthropic) and **Codex** (OpenAI) accounts.
 
 **toguru** (トグル) is Japanese for *"toggle"* — and that's exactly what it does:
