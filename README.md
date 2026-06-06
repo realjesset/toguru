@@ -70,8 +70,22 @@ macc claude auth work        # re-runs login and updates the "work" profile
 Already logged in through the provider's own CLI? You can still snapshot the
 current session without re-authenticating: `macc add claude work`.
 
-Run `macc` with **no arguments** for a fully interactive menu (powered by
-`@inquirer/prompts`).
+Profiles default to your **account email** — log in as `you@example.com`
+and the profile is named that (just press Enter at the prompt, or pass your own
+name).
+
+Run `macc` (or `macc status`) with no arguments for the **interactive hub**:
+arrow-key through every saved profile across both providers and pick one to
+switch / re-authenticate / rename / remove — or log in to a new account.
+
+```
+Codex (OpenAI)
+❯ you@example.com (you@example.com) [active]
+  work@company.com (work@company.com)
+──────────────
+➕ Log in to a new account
+Exit
+```
 
 ---
 
@@ -79,13 +93,13 @@ Run `macc` with **no arguments** for a fully interactive menu (powered by
 
 | Command | Description |
 | --- | --- |
-| `macc` | Interactive menu (pick provider → action) |
+| `macc` / `macc status` | Interactive hub: arrow-key a profile → switch / re-auth / rename / remove (alias: `current`) |
 | `macc <provider> auth [name]` | **Log in (or re-authenticate a profile) and save it** — e.g. `macc codex auth` |
 | `macc auth [provider] [name]` | Same as above, with the provider as an argument |
 | `macc switch [provider] [name]` | Activate a saved account (alias: `use`) |
 | `macc add [provider] [name]` | Save the *current* live session as a named account (no re-login) |
 | `macc list [provider]` | List saved accounts (alias: `ls`) |
-| `macc current [provider]` | Show the active account + live-sync status (alias: `status`) |
+| `macc current [provider]` | Show active account + live-sync status, then open the hub on a TTY (alias: `status`; use `--json` for plain output) |
 | `macc rename [provider] [old] [new]` | Rename a saved account (alias: `mv`) |
 | `macc remove [provider] [name]` | Forget a saved account (alias: `rm`) |
 | `macc export [provider]` | Export accounts as JSON |
