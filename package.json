@@ -1,0 +1,59 @@
+{
+  "name": "multi-account",
+  "version": "0.1.0",
+  "description": "One CLI to swap between multiple Claude Code (Anthropic) and Codex (OpenAI) accounts.",
+  "keywords": [
+    "cli",
+    "claude",
+    "claude-code",
+    "anthropic",
+    "codex",
+    "openai",
+    "account",
+    "switch",
+    "auth",
+    "bun"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "multi-account": "dist/cli.js",
+    "macc": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "start": "node dist/cli.js",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.2.1",
+    "commander": "^13.0.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "bun-types": "^1.1.42",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}
