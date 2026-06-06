@@ -45,21 +45,30 @@ bun test                  # run the test suite
 ## Quick start
 
 ```bash
-# 1. Log in to your first account using the provider's own CLI, then save it:
-claude            # sign in as you normally would
-macc add claude work
+# 1. Log in AND save in one step (opens your browser):
+macc claude auth work        # or: macc codex auth work
 
-# 2. Log in to another account (e.g. personal), then save it too:
-macc add claude personal
+# 2. Add another account the same way:
+macc claude auth personal
 
 # 3. Switch any time:
 macc switch claude personal
-macc switch claude          # interactive picker
+macc switch claude           # interactive picker
 
 # See where things stand:
 macc list
 macc current
 ```
+
+If a saved profile's token goes stale, re-authenticate it **in place** — same
+name, fresh session:
+
+```bash
+macc claude auth work        # re-runs login and updates the "work" profile
+```
+
+Already logged in through the provider's own CLI? You can still snapshot the
+current session without re-authenticating: `macc add claude work`.
 
 Run `macc` with **no arguments** for a fully interactive menu (powered by
 `@inquirer/prompts`).
@@ -71,9 +80,10 @@ Run `macc` with **no arguments** for a fully interactive menu (powered by
 | Command | Description |
 | --- | --- |
 | `macc` | Interactive menu (pick provider → action) |
+| `macc <provider> auth [name]` | **Log in (or re-authenticate a profile) and save it** — e.g. `macc codex auth` |
+| `macc auth [provider] [name]` | Same as above, with the provider as an argument |
 | `macc switch [provider] [name]` | Activate a saved account (alias: `use`) |
-| `macc add [provider] [name]` | Save the current live session as a named account |
-| `macc login [provider] [name]` | Run the provider's login flow, then save it |
+| `macc add [provider] [name]` | Save the *current* live session as a named account (no re-login) |
 | `macc list [provider]` | List saved accounts (alias: `ls`) |
 | `macc current [provider]` | Show the active account + live-sync status (alias: `status`) |
 | `macc rename [provider] [old] [new]` | Rename a saved account (alias: `mv`) |
@@ -106,6 +116,11 @@ macc import backup.json
 
 ## How it works
 
+- **`auth`** delegates to the provider's own login (`claude auth login` /
+  `codex login`), then captures the resulting session and saves it as a profile
+  — all in one command. Re-authenticating an existing profile overwrites it in
+  place (and, for Claude, pre-fills the profile's email on the login page). Note
+  that the account you end up with is whichever one you sign into in the browser.
 - **`add`** reads whatever session your provider CLI currently holds and stores
   a copy under a name you choose. Your live session is left untouched.
 - **`switch`** writes a saved credential back into the provider's live location,
