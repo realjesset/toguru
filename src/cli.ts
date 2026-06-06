@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-import { runInteractive } from "./commands/interactive";
+import { runManage } from "./commands/manage";
 import { createProgram } from "./program";
 import { isMultiAccountError } from "./utils/errors";
 import { logger } from "./utils/logger";
 
 async function main(argv: string[]): Promise<void> {
   const args = argv.slice(2);
-  // No subcommand → friendly interactive menu.
+  // No subcommand → interactive management hub.
   if (args.length === 0) {
-    await runInteractive();
+    await runManage();
     return;
   }
   const program = createProgram();

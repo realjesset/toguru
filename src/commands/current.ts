@@ -4,6 +4,7 @@ import { Store } from "../core/store";
 import { getProvider, providerIds, providers } from "../providers/registry";
 import type { ProviderId } from "../providers/types";
 import { logger } from "../utils/logger";
+import { runManage } from "./manage";
 
 interface CurrentOptions {
   json?: boolean;
@@ -70,5 +71,11 @@ export function currentCommand(): Command {
     .action(async (providerArg: string | undefined, opts: CurrentOptions) => {
       const ids = providerArg ? [getProvider(providerArg).id] : providerIds;
       await runCurrent(ids, opts);
+      // On an interactive terminal, drop into the management hub.
+      const interactive = !opts.json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY);
+      if (interactive) {
+        logger.out("");
+        await runManage();
+      }
     });
 }
