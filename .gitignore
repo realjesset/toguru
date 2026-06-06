@@ -20,3 +20,12 @@ npm-debug.log*
 
 # Bun
 bun.lockb
+
+# npm pack output
+*.tgz
+
+# Safety: never commit credential exports or live auth files
+store.json
+auth.json
+.credentials.json
+*.account-export.json

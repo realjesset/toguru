@@ -15,6 +15,18 @@
     "bun"
   ],
   "license": "MIT",
+  "author": "realjesset <you@example.com>",
+  "homepage": "https://github.com/realjesset/multi-account#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/realjesset/multi-account.git"
+  },
+  "bugs": {
+    "url": "https://github.com/realjesset/multi-account/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "multi-account": "dist/cli.js",
