@@ -7,6 +7,12 @@ export type ProviderId = "claude" | "codex";
  */
 export type Credential = Record<string, unknown>;
 
+/** Options passed to a provider's interactive login flow. */
+export interface LoginOptions {
+  /** Pre-fill this email on the provider's login page, when supported. */
+  email?: string;
+}
+
 /** Human-friendly details extracted from a credential, all best-effort. */
 export interface AccountDescriptor {
   /** Display label (usually an email address). */
@@ -41,5 +47,5 @@ export interface Provider {
   suggestLabel?(): Promise<string | undefined>;
 
   /** Delegate to the provider's own interactive login flow, when supported. */
-  login?(): Promise<void>;
+  login?(options?: LoginOptions): Promise<void>;
 }

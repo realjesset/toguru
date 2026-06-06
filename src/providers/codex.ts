@@ -62,6 +62,7 @@ export const codexProvider: Provider = {
   },
 
   async login(): Promise<void> {
+    // `codex login` has no email pre-fill flag, so options are ignored here.
     await runInherit("codex", ["login"]);
   },
 };

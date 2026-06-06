@@ -1,7 +1,8 @@
 import { claudeConfigFile, claudeCredentialsFile, isMac } from "../core/paths";
 import { keychainGet, keychainSet } from "../core/keychain";
 import { readJson, writeJson } from "../utils/fs";
-import type { AccountDescriptor, Credential, Provider } from "./types";
+import { runInherit } from "../utils/proc";
+import type { AccountDescriptor, Credential, LoginOptions, Provider } from "./types";
 
 /** macOS keychain service name written by Claude Code. */
 const KEYCHAIN_SERVICE = "Claude Code-credentials";
@@ -69,5 +70,14 @@ export const claudeProvider: Provider = {
   async suggestLabel(): Promise<string | undefined> {
     const config = await readJson<ClaudeConfig>(claudeConfigFile());
     return config?.oauthAccount?.emailAddress;
+  },
+
+  async login(options?: LoginOptions): Promise<void> {
+    const args = ["auth", "login"];
+    if (options?.email) {
+      // Pre-fill the email on the login page (handy when re-authenticating).
+      args.push("--email", options.email);
+    }
+    await runInherit("claude", args);
   },
 };
