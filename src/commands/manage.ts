@@ -77,8 +77,10 @@ export async function runManage(): Promise<void> {
       }
     }
     choices.push(new Separator());
-    choices.push({ name: "➕ Log in to a new account", value: "login" });
-    choices.push({ name: "Exit", value: "exit" });
+    // Full-colour emoji so they stay visible on dark terminals (the monochrome
+    // "➕" glyph renders nearly invisible there).
+    choices.push({ name: "🔑 Log in to a new account", value: "login" });
+    choices.push({ name: "🚪 Exit", value: "exit" });
 
     const selection = await select<Selection>({
       message: "Accounts — pick one to manage",

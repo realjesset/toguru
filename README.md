@@ -88,8 +88,8 @@ Codex (OpenAI)
 ❯ you@example.com (you@example.com) [active]
   work@company.com (work@company.com)
 ──────────────
-➕ Log in to a new account
-Exit
+🔑 Log in to a new account
+🚪 Exit
 ```
 
 ---
