@@ -1,4 +1,3 @@
-import { createRequire } from "node:module";
 import { Command } from "commander";
 import { addCommand } from "./commands/add";
 import { authCommand, providerCommands } from "./commands/auth";
@@ -8,9 +7,8 @@ import { removeCommand } from "./commands/remove";
 import { renameCommand } from "./commands/rename";
 import { switchCommand } from "./commands/switch";
 import { exportCommand, importCommand } from "./commands/transfer";
-
-const require = createRequire(import.meta.url);
-const pkg = require("../package.json") as { version: string; description: string };
+import { updateCommand } from "./commands/update";
+import { DESCRIPTION, VERSION } from "./version";
 
 /**
  * Build the fully-wired commander program. Kept separate from the entrypoint so
@@ -21,8 +19,8 @@ export function createProgram(): Command {
 
   program
     .name("toguru")
-    .description(pkg.description)
-    .version(pkg.version, "-v, --version", "print the version number")
+    .description(DESCRIPTION)
+    .version(VERSION, "-v, --version", "print the version number")
     .showHelpAfterError("(add --help for usage)")
     .configureHelp({ showGlobalOptions: true });
 
@@ -35,6 +33,7 @@ export function createProgram(): Command {
   program.addCommand(removeCommand());
   program.addCommand(exportCommand());
   program.addCommand(importCommand());
+  program.addCommand(updateCommand());
 
   // Per-provider command groups: `toguru claude auth`, `toguru codex auth`, …
   for (const command of providerCommands()) {

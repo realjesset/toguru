@@ -109,6 +109,7 @@ Codex (OpenAI)
 | `toguru remove [provider] [name]` | Forget a saved account (alias: `rm`) |
 | `toguru export [provider]` | Export accounts as JSON |
 | `toguru import <file>` | Import accounts from a JSON export |
+| `toguru update` | Update to the latest version (auto-detects npm/bun/pnpm/yarn) |
 
 `provider` is `claude` or `codex`. Omit any positional argument and you'll be
 prompted for it.
@@ -119,7 +120,19 @@ prompted for it.
 - `toguru list --json` / `toguru current --json` — machine-readable output for scripts.
 - `toguru remove --yes` — skip the confirmation prompt.
 - `toguru export --out accounts.json` — write to a file; `toguru import --overwrite` to replace existing entries.
+- `toguru update --check` — only report whether a newer version exists; `--pm <npm|bun|pnpm|yarn>` to force the package manager.
 - `-v, --version`, `-h, --help` everywhere.
+
+### Updating
+
+```bash
+toguru update          # checks npm, then updates in place via the manager that installed it
+toguru update --check  # just tell me if there's a newer version
+```
+
+`update` figures out whether toguru was installed with npm, bun, pnpm or yarn
+(from where the binary lives) and runs the matching global install. From a source
+checkout or `npx`, it prints the manual command instead.
 
 ### Examples
 
