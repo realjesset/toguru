@@ -122,6 +122,7 @@ name).
 | `tg add [provider] [name]` | Save the *current* live session as a named account (no re-login) |
 | `tg list [provider]` | List saved accounts (alias: `ls`) |
 | `tg current [provider]` | Show active account + live-sync status, then open the hub on a TTY (alias: `status`; use `--json` for plain output) |
+| `tg sync [provider]` | Capture a token refresh / re-auth from the live session into the active profile |
 | `tg rename [provider] [old] [new]` | Rename a saved account (alias: `mv`) |
 | `tg remove [provider] [name]` | Forget a saved account (alias: `rm`) |
 | `tg export [provider]` | Export accounts as JSON |
@@ -180,6 +181,22 @@ tg import backup.json
   credentials.
 - **`current`** compares the live session against what it last activated and
   warns if they have drifted (e.g. a token was refreshed by the provider).
+
+### Staying in sync after a re-auth
+
+Say you `tg switch claude work`, then run `claude` and it asks you to log in
+again. The provider writes fresh credentials to its live location — and tg keeps
+up: it treats the live session as the source of truth for the **active** profile
+and copies those updated credentials back into it, so switching away and back
+never restores a stale token. (We don't symlink the credential files — the
+macOS Keychain can't be symlinked, and the atomic `write-temp-then-rename` most
+CLIs use would break a symlink anyway.)
+
+This reconcile happens automatically whenever tg looks: opening the hub (`tg`),
+`tg switch`, and `tg status`. You can also force it with `tg sync`. If the live
+session turns out to be a **different** account (you logged in elsewhere without
+`tg switch`), tg won't overwrite your saved profile — it tells you to `tg add`
+the new one instead.
 
 Nothing ever calls a remote API. Labels and plan names shown for Codex are
 parsed locally from the (unverified) `id_token` purely for display.

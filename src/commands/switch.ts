@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { classifyAuth, relativeTime } from "../core/auth-status";
+import { reconcileActive } from "../core/reconcile";
 import { Store, type StoredAccount } from "../core/store";
 import type { Provider } from "../providers/types";
 import { ToguruError } from "../utils/errors";
@@ -12,6 +13,9 @@ import { pickAccount, resolveProvider } from "./shared";
  */
 export async function runSwitch(provider: Provider, name?: string): Promise<void> {
   const store = await Store.load();
+  // Before leaving the current account, capture any refresh / re-auth it picked
+  // up while it was live — otherwise switching back would restore a stale token.
+  await reconcileActive(provider, store);
   let account: StoredAccount;
   if (name) {
     const found = store.get(provider.id, name);

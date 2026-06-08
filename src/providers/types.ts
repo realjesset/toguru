@@ -19,6 +19,8 @@ export interface AccountDescriptor {
   label?: string;
   /** Email address, when known. */
   email?: string;
+  /** Stable account identifier (uuid/account id), used to tell accounts apart. */
+  accountId?: string;
   /** Subscription/plan name, when known. */
   plan?: string;
   /** Unix epoch milliseconds when the access token expires, when known. */

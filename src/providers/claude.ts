@@ -128,6 +128,9 @@ export const claudeProvider: Provider = {
       descriptor.email = account.emailAddress;
       descriptor.label = account.emailAddress;
     }
+    if (typeof account?.accountUuid === "string") {
+      descriptor.accountId = account.accountUuid;
+    }
     if (oauth.subscriptionType) {
       descriptor.plan = oauth.subscriptionType;
     }

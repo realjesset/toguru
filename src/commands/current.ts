@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import pc from "picocolors";
 import { authSummary, classifyAuth } from "../core/auth-status";
+import { reconcileActive } from "../core/reconcile";
 import { Store } from "../core/store";
 import { getProvider, providerIds, providers } from "../providers/registry";
 import type { AccountDescriptor, ProviderId } from "../providers/types";
@@ -34,6 +35,13 @@ async function describeProvider(store: Store, id: ProviderId) {
 /** Show the active account (and live-sync status) for the given providers. */
 export async function runCurrent(ids: ProviderId[], options: CurrentOptions = {}): Promise<void> {
   const store = await Store.load();
+  // Pull in any live refresh / re-auth first (skip for --json, which should be
+  // a pure read for scripts).
+  if (!options.json) {
+    for (const id of ids) {
+      await reconcileActive(providers[id], store);
+    }
+  }
   const results = await Promise.all(ids.map((id) => describeProvider(store, id)));
 
   if (options.json) {
@@ -59,7 +67,9 @@ export async function runCurrent(ids: ProviderId[], options: CurrentOptions = {}
     }
     let status = "";
     if (inSync === false) {
-      status = pc.yellow(" (live session differs — run `switch` to re-apply)");
+      // Same-account drift was already auto-synced above, so a remaining
+      // mismatch means the live session is a *different* account.
+      status = pc.yellow(" (live session is a different account — run `tg add` to save it)");
     } else if (!live) {
       status = pc.yellow(" (no live session detected)");
     }

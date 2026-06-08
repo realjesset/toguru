@@ -6,6 +6,7 @@ import { listCommand } from "./commands/list";
 import { removeCommand } from "./commands/remove";
 import { renameCommand } from "./commands/rename";
 import { switchCommand } from "./commands/switch";
+import { syncCommand } from "./commands/sync";
 import { exportCommand, importCommand } from "./commands/transfer";
 import { updateCommand } from "./commands/update";
 import { DESCRIPTION, VERSION } from "./version";
@@ -29,6 +30,7 @@ export function createProgram(): Command {
   program.addCommand(addCommand());
   program.addCommand(listCommand());
   program.addCommand(currentCommand());
+  program.addCommand(syncCommand());
   program.addCommand(renameCommand());
   program.addCommand(removeCommand());
   program.addCommand(exportCommand());

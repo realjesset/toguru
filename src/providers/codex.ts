@@ -40,6 +40,9 @@ function describeAuth(auth: CodexAuth | null): AccountDescriptor {
   if (typeof exp === "number") {
     descriptor.expiresAt = exp * 1000;
   }
+  if (typeof auth?.tokens?.account_id === "string") {
+    descriptor.accountId = auth.tokens.account_id;
+  }
   descriptor.canRefresh = Boolean(auth?.tokens?.refresh_token);
   return descriptor;
 }

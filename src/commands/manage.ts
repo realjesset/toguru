@@ -1,4 +1,5 @@
 import { select, Separator } from "@inquirer/prompts";
+import { reconcileActive } from "../core/reconcile";
 import { Store } from "../core/store";
 import { providerIds, providers } from "../providers/registry";
 import type { ProviderId } from "../providers/types";
@@ -59,6 +60,11 @@ async function manageOne(target: Target): Promise<void> {
 export async function runManage(): Promise<void> {
   for (;;) {
     const store = await Store.load();
+    // Capture any refresh / in-place re-auth that happened in a live session
+    // since we last looked, so the hub reflects reality.
+    for (const id of providerIds) {
+      await reconcileActive(providers[id], store);
+    }
 
     const choices: Array<Separator | { name: string; value: Selection }> = [];
     for (const id of providerIds) {
