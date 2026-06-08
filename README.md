@@ -8,9 +8,8 @@
 toggle between accounts.
 
 Tired of logging out and back in to switch between your personal and work
-Claude/Codex subscriptions? `toguru` saves each signed-in session and
-lets you flip between them in a second — from a single tool, on macOS, Linux,
-and Windows.
+Claude/Codex subscriptions? `tg` saves each signed-in session and lets you flip
+between them in a second — from a single tool, on macOS, Linux, and Windows.
 
 It is a thin, safe layer over the credentials your existing CLIs already write:
 
@@ -34,16 +33,31 @@ bun add -g toguru-cli
 npm install -g toguru-cli
 ```
 
-This exposes two commands: `toguru` and the short alias `tg`.
+The command is **`tg`** (with `toguru` as a longer-form alias — they're
+identical). `tg` isn't a standard Unix/Linux command, so it won't clash with
+anything already on your `PATH`.
 
-### Run from source (Bun)
+## Just run `tg`
 
-```bash
-bun install
-bun run dev -- --help     # run the CLI in dev
-bun run build             # produce dist/
-bun test                  # run the test suite
+That's the whole thing — run `tg` with **no arguments** and you drop straight
+into the interactive hub: every saved account across Claude and Codex, arrow-key
+to one to switch / re-authenticate / rename / remove, or log in to a new one.
+
 ```
+$ tg
+
+? Accounts — pick one to manage
+  Claude Code (Anthropic)
+❯   you@example.com [active]
+  Codex (OpenAI)
+    work@company.com
+  ──────────────
+  🔑 Log in to a new account
+  🚪 Exit
+```
+
+No flags to memorize. Everything below is just the same actions as direct
+commands, for when you want them.
 
 ---
 
@@ -51,46 +65,34 @@ bun test                  # run the test suite
 
 ```bash
 # 1. Log in AND save in one step (opens your browser):
-toguru claude auth work        # or: toguru codex auth work
+tg claude auth work        # or: tg codex auth work
 
 # 2. Add another account the same way:
-toguru claude auth personal
+tg claude auth personal
 
 # 3. Switch any time:
-toguru switch claude personal
-toguru switch claude           # interactive picker
+tg switch claude personal
+tg switch claude           # interactive picker
+tg                         # …or just run tg and pick
 
 # See where things stand:
-toguru list
-toguru current
+tg list
+tg status
 ```
 
 If a saved profile's token goes stale, re-authenticate it **in place** — same
 name, fresh session:
 
 ```bash
-toguru claude auth work        # re-runs login and updates the "work" profile
+tg claude auth work        # re-runs login and updates the "work" profile
 ```
 
 Already logged in through the provider's own CLI? You can still snapshot the
-current session without re-authenticating: `toguru add claude work`.
+current session without re-authenticating: `tg add claude work`.
 
 Profiles default to your **account email** — log in as `you@example.com`
 and the profile is named that (just press Enter at the prompt, or pass your own
 name).
-
-Run `toguru` (or `toguru status`) with no arguments for the **interactive hub**:
-arrow-key through every saved profile across both providers and pick one to
-switch / re-authenticate / rename / remove — or log in to a new account.
-
-```
-Codex (OpenAI)
-❯ you@example.com (you@example.com) [active]
-  work@company.com (work@company.com)
-──────────────
-🔑 Log in to a new account
-🚪 Exit
-```
 
 ---
 
@@ -98,36 +100,36 @@ Codex (OpenAI)
 
 | Command | Description |
 | --- | --- |
-| `toguru` / `toguru status` | Interactive hub: arrow-key a profile → switch / re-auth / rename / remove (alias: `current`) |
-| `toguru <provider> auth [name]` | **Log in (or re-authenticate a profile) and save it** — e.g. `toguru codex auth` |
-| `toguru auth [provider] [name]` | Same as above, with the provider as an argument |
-| `toguru switch [provider] [name]` | Activate a saved account (alias: `use`) |
-| `toguru add [provider] [name]` | Save the *current* live session as a named account (no re-login) |
-| `toguru list [provider]` | List saved accounts (alias: `ls`) |
-| `toguru current [provider]` | Show active account + live-sync status, then open the hub on a TTY (alias: `status`; use `--json` for plain output) |
-| `toguru rename [provider] [old] [new]` | Rename a saved account (alias: `mv`) |
-| `toguru remove [provider] [name]` | Forget a saved account (alias: `rm`) |
-| `toguru export [provider]` | Export accounts as JSON |
-| `toguru import <file>` | Import accounts from a JSON export |
-| `toguru update` | Update to the latest version (auto-detects npm/bun/pnpm/yarn) |
+| `tg` / `tg status` | Interactive hub: arrow-key a profile → switch / re-auth / rename / remove (alias: `current`) |
+| `tg <provider> auth [name]` | **Log in (or re-authenticate a profile) and save it** — e.g. `tg codex auth` |
+| `tg auth [provider] [name]` | Same as above, with the provider as an argument |
+| `tg switch [provider] [name]` | Activate a saved account (alias: `use`) |
+| `tg add [provider] [name]` | Save the *current* live session as a named account (no re-login) |
+| `tg list [provider]` | List saved accounts (alias: `ls`) |
+| `tg current [provider]` | Show active account + live-sync status, then open the hub on a TTY (alias: `status`; use `--json` for plain output) |
+| `tg rename [provider] [old] [new]` | Rename a saved account (alias: `mv`) |
+| `tg remove [provider] [name]` | Forget a saved account (alias: `rm`) |
+| `tg export [provider]` | Export accounts as JSON |
+| `tg import <file>` | Import accounts from a JSON export |
+| `tg update` | Update to the latest version (auto-detects npm/bun/pnpm/yarn) |
 
 `provider` is `claude` or `codex`. Omit any positional argument and you'll be
 prompted for it.
 
 ### Useful flags
 
-- `toguru add --label <email>` — set a custom label; `--activate` to switch to it immediately; `--force` to overwrite.
-- `toguru list --json` / `toguru current --json` — machine-readable output for scripts.
-- `toguru remove --yes` — skip the confirmation prompt.
-- `toguru export --out accounts.json` — write to a file; `toguru import --overwrite` to replace existing entries.
-- `toguru update --check` — only report whether a newer version exists; `--pm <npm|bun|pnpm|yarn>` to force the package manager.
+- `tg add --label <email>` — set a custom label; `--activate` to switch to it immediately; `--force` to overwrite.
+- `tg list --json` / `tg current --json` — machine-readable output for scripts.
+- `tg remove --yes` — skip the confirmation prompt.
+- `tg export --out accounts.json` — write to a file; `tg import --overwrite` to replace existing entries.
+- `tg update --check` — only report whether a newer version exists; `--pm <npm|bun|pnpm|yarn>` to force the package manager.
 - `-v, --version`, `-h, --help` everywhere.
 
 ### Updating
 
 ```bash
-toguru update          # checks npm, then updates in place via the manager that installed it
-toguru update --check  # just tell me if there's a newer version
+tg update          # checks npm, then updates in place via the manager that installed it
+tg update --check  # just tell me if there's a newer version
 ```
 
 `update` figures out whether toguru was installed with npm, bun, pnpm or yarn
@@ -137,11 +139,11 @@ checkout or `npx`, it prints the manual command instead.
 ### Examples
 
 ```bash
-toguru add codex --label me@work.com --activate
-toguru switch codex            # pick interactively
-toguru list --json | jq '.[0].accounts'
-toguru export --out backup.json   # ⚠️ contains credentials — keep it private
-toguru import backup.json
+tg add codex --label me@work.com --activate
+tg switch codex            # pick interactively
+tg list --json | jq '.[0].accounts'
+tg export --out backup.json   # ⚠️ contains credentials — keep it private
+tg import backup.json
 ```
 
 ---
@@ -171,6 +173,15 @@ parsed locally from the (unverified) `id_token` purely for display.
 > vault is created with `0600` permissions; treat exports as secrets.
 
 ---
+
+## Run from source (Bun)
+
+```bash
+bun install
+bun run dev -- --help     # run the CLI in dev
+bun run build             # produce dist/
+bun test                  # run the test suite
+```
 
 ## Use as a library
 
