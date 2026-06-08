@@ -134,6 +134,7 @@ export const claudeProvider: Provider = {
     if (typeof oauth.expiresAt === "number") {
       descriptor.expiresAt = oauth.expiresAt;
     }
+    descriptor.canRefresh = Boolean(oauth.refreshToken);
     return descriptor;
   },
 

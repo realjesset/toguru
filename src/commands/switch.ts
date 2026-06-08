@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { classifyAuth, relativeTime } from "../core/auth-status";
 import { Store, type StoredAccount } from "../core/store";
 import type { Provider } from "../providers/types";
 import { ToguruError } from "../utils/errors";
@@ -37,6 +38,19 @@ export async function runSwitch(provider: Provider, name?: string): Promise<void
       account.label ? ` (${account.label})` : ""
     }.`,
   );
+
+  // Let the user know whether the session they just activated is usable.
+  const descriptor = provider.describe(account.credential);
+  const state = classifyAuth(descriptor);
+  const reauth = `tg ${provider.id} auth ${account.name}`;
+  if (state === "needs-reauth") {
+    logger.warn(`This saved session can't refresh itself — run \`${reauth}\` to re-authenticate.`);
+  } else if (state === "expired") {
+    const when = descriptor.expiresAt ? ` (expired ${relativeTime(descriptor.expiresAt)})` : "";
+    logger.info(
+      `Its token has expired${when}; ${provider.displayName} will refresh it automatically. Run \`${reauth}\` if you're asked to log in.`,
+    );
+  }
 }
 
 export function switchCommand(): Command {

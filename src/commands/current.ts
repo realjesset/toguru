@@ -1,8 +1,9 @@
 import { Command } from "commander";
 import pc from "picocolors";
+import { authSummary, classifyAuth } from "../core/auth-status";
 import { Store } from "../core/store";
 import { getProvider, providerIds, providers } from "../providers/registry";
-import type { ProviderId } from "../providers/types";
+import type { AccountDescriptor, ProviderId } from "../providers/types";
 import { logger } from "../utils/logger";
 import { runManage } from "./manage";
 
@@ -22,10 +23,12 @@ async function describeProvider(store: Store, id: ProviderId) {
   const stored = activeName ? store.get(id, activeName) : undefined;
   // Whether the live session matches what we believe is active.
   let inSync: boolean | null = null;
+  let descriptor: AccountDescriptor | null = null;
   if (stored) {
     inSync = fingerprint(live) === fingerprint(stored.credential);
+    descriptor = provider.describe(stored.credential);
   }
-  return { provider, activeName, live, inSync };
+  return { provider, activeName, live, inSync, descriptor };
 }
 
 /** Show the active account (and live-sync status) for the given providers. */
@@ -40,12 +43,14 @@ export async function runCurrent(ids: ProviderId[], options: CurrentOptions = {}
         active: r.activeName ?? null,
         loggedIn: r.live !== null,
         inSync: r.inSync,
+        authState: r.descriptor ? classifyAuth(r.descriptor) : null,
+        expiresAt: r.descriptor?.expiresAt ?? null,
       })),
     );
     return;
   }
 
-  for (const { provider, activeName, live, inSync } of results) {
+  for (const { provider, activeName, live, inSync, descriptor } of results) {
     const head = pc.bold(pc.cyan(provider.displayName));
     if (!activeName) {
       const note = live ? pc.dim("(logged in, not saved — run `add`)") : pc.dim("(no active account)");
@@ -59,6 +64,9 @@ export async function runCurrent(ids: ProviderId[], options: CurrentOptions = {}
       status = pc.yellow(" (no live session detected)");
     }
     logger.out(`${head}: ${pc.green(activeName)}${status}`);
+    if (descriptor) {
+      logger.out(`  ${authSummary(classifyAuth(descriptor), descriptor.expiresAt)}`);
+    }
   }
 }
 

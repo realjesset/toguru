@@ -50,7 +50,7 @@ $ tg
   Claude Code (Anthropic)
 ❯   you@example.com [active]
   Codex (OpenAI)
-    work@company.com
+    work@company.com ⚠ re-auth
   ──────────────
   🔑 Log in to a new account
   🚪 Exit
@@ -58,6 +58,21 @@ $ tg
 
 No flags to memorize. Everything below is just the same actions as direct
 commands, for when you want them.
+
+### Auth status
+
+toguru flags each account's sign-in state — read **locally** from the saved
+token, no network calls:
+
+| Tag | Meaning |
+| --- | --- |
+| *(none)* | Signed in, token still valid |
+| `⟳ expired` | Access token expired — the provider refreshes it automatically on next use |
+| `⚠ re-auth` | No refresh token — you must log in again (`tg <provider> auth <name>`) |
+
+`tg status` spells this out per active account (e.g. *"✓ signed in (token
+expires in 8 hours)"*), and `tg switch` tells you right after switching if the
+session it activated has expired or needs re-authentication.
 
 ---
 

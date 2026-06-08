@@ -1,5 +1,6 @@
 import { select } from "@inquirer/prompts";
 import pc from "picocolors";
+import { authTag, classifyAuth } from "../core/auth-status";
 import type { Store, StoredAccount } from "../core/store";
 import { getProvider, providerIds, providers } from "../providers/registry";
 import type { Provider } from "../providers/types";
@@ -23,8 +24,8 @@ export async function resolveProvider(id?: string): Promise<Provider> {
   return providers[choice];
 }
 
-/** Format an account for display: `name (label) [active]`. */
-export function formatAccount(account: StoredAccount, activeName?: string): string {
+/** Format an account for display: `name (label) [active] <status>`. */
+export function formatAccount(account: StoredAccount, activeName?: string, statusTag?: string): string {
   const parts = [pc.bold(account.name)];
   if (account.label) {
     parts.push(pc.dim(`(${account.label})`));
@@ -32,7 +33,15 @@ export function formatAccount(account: StoredAccount, activeName?: string): stri
   if (account.name === activeName) {
     parts.push(pc.green("[active]"));
   }
+  if (statusTag) {
+    parts.push(statusTag);
+  }
   return parts.join(" ");
+}
+
+/** Local, no-network auth status tag for an account (empty when nothing to flag). */
+export function statusTagFor(provider: Provider, account: StoredAccount): string {
+  return authTag(classifyAuth(provider.describe(account.credential)));
 }
 
 /**
@@ -55,7 +64,7 @@ export async function pickAccount(
   const name = await select({
     message,
     choices: accounts.map((account) => ({
-      name: formatAccount(account, activeName),
+      name: formatAccount(account, activeName, statusTagFor(provider, account)),
       value: account.name,
     })),
   });

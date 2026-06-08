@@ -5,7 +5,7 @@ import type { ProviderId } from "../providers/types";
 import { runAuth } from "./auth";
 import { runRemove } from "./remove";
 import { runRename } from "./rename";
-import { formatAccount, resolveProvider } from "./shared";
+import { formatAccount, resolveProvider, statusTagFor } from "./shared";
 import { runSwitch } from "./switch";
 
 interface Target {
@@ -71,7 +71,7 @@ export async function runManage(): Promise<void> {
       const active = store.active(id);
       for (const account of accounts) {
         choices.push({
-          name: `  ${formatAccount(account, active)}`,
+          name: `  ${formatAccount(account, active, statusTagFor(providers[id], account))}`,
           value: { provider: id, name: account.name },
         });
       }

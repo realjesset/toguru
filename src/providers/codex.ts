@@ -33,6 +33,14 @@ function describeAuth(auth: CodexAuth | null): AccountDescriptor {
       }
     }
   }
+  // Token expiry comes from the access token's `exp` (seconds), falling back to
+  // the id token; refresh capability from the presence of a refresh token.
+  const expClaims = decodeJwt(auth?.tokens?.access_token) ?? claims;
+  const exp = expClaims?.exp;
+  if (typeof exp === "number") {
+    descriptor.expiresAt = exp * 1000;
+  }
+  descriptor.canRefresh = Boolean(auth?.tokens?.refresh_token);
   return descriptor;
 }
 

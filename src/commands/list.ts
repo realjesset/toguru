@@ -1,10 +1,11 @@
 import { Command } from "commander";
 import pc from "picocolors";
+import { classifyAuth } from "../core/auth-status";
 import { Store } from "../core/store";
 import { getProvider, providerIds, providers } from "../providers/registry";
 import type { ProviderId } from "../providers/types";
 import { logger } from "../utils/logger";
-import { formatAccount } from "./shared";
+import { formatAccount, statusTagFor } from "./shared";
 
 interface ListOptions {
   json?: boolean;
@@ -30,14 +31,18 @@ export async function runList(providerIdsToShow: ProviderId[], options: ListOpti
     const payload = providerIdsToShow.map((id) => ({
       provider: id,
       active: store.active(id) ?? null,
-      accounts: store.list(id).map((account) => ({
-        name: account.name,
-        label: account.label ?? null,
-        active: account.name === store.active(id),
-        ...providers[id].describe(account.credential),
-        addedAt: account.addedAt,
-        updatedAt: account.updatedAt,
-      })),
+      accounts: store.list(id).map((account) => {
+        const descriptor = providers[id].describe(account.credential);
+        return {
+          name: account.name,
+          label: account.label ?? null,
+          active: account.name === store.active(id),
+          ...descriptor,
+          authState: classifyAuth(descriptor),
+          addedAt: account.addedAt,
+          updatedAt: account.updatedAt,
+        };
+      }),
     }));
     logger.json(payload);
     return;
@@ -52,7 +57,8 @@ export async function runList(providerIdsToShow: ProviderId[], options: ListOpti
     } else {
       for (const account of accounts) {
         const meta = describePlan(id, account);
-        logger.out(`  ${formatAccount(account, activeName)}${meta ? pc.dim(`  ${meta}`) : ""}`);
+        const tag = statusTagFor(providers[id], account);
+        logger.out(`  ${formatAccount(account, activeName, tag)}${meta ? pc.dim(`  ${meta}`) : ""}`);
       }
     }
     logger.out("");

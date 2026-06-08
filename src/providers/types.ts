@@ -23,6 +23,11 @@ export interface AccountDescriptor {
   plan?: string;
   /** Unix epoch milliseconds when the access token expires, when known. */
   expiresAt?: number;
+  /**
+   * Whether the credential carries a refresh token (so an expired access token
+   * can renew itself). `false` means re-authentication is required.
+   */
+  canRefresh?: boolean;
 }
 
 /**
