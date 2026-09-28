@@ -31,6 +31,10 @@ export function storeFile(): string {
 /* --- Claude Code (Anthropic) live locations --- */
 
 export function claudeDir(): string {
+  const override = process.env.CLAUDE_CONFIG_DIR?.trim();
+  if (override) {
+    return path.resolve(override);
+  }
   return path.join(os.homedir(), ".claude");
 }
 
@@ -39,8 +43,16 @@ export function claudeCredentialsFile(): string {
   return path.join(claudeDir(), ".credentials.json");
 }
 
-/** Claude Code's main config; holds the signed-in account's profile. */
+/**
+ * Claude Code's main config; holds the signed-in account's profile.
+ * With `CLAUDE_CONFIG_DIR` set, it lives inside that directory alongside the
+ * credentials; otherwise it sits at `~/.claude.json`.
+ */
 export function claudeConfigFile(): string {
+  const override = process.env.CLAUDE_CONFIG_DIR?.trim();
+  if (override) {
+    return path.join(path.resolve(override), ".claude.json");
+  }
   return path.join(os.homedir(), ".claude.json");
 }
 
