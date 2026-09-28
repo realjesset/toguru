@@ -1,11 +1,19 @@
+import { createHash } from "node:crypto";
 import { claudeConfigFile, claudeCredentialsFile, isMac } from "../core/paths";
 import { keychainGet, keychainSet } from "../core/keychain";
 import { readJson, writeJson } from "../utils/fs";
 import { runInherit } from "../utils/proc";
 import type { AccountDescriptor, Credential, LoginOptions, Provider } from "./types";
 
-/** macOS keychain service name written by Claude Code. */
-const KEYCHAIN_SERVICE = "Claude Code-credentials";
+/** Match Claude Code's config-specific macOS Keychain namespace. */
+function keychainService(): string {
+  // An explicit empty secure-storage override selects the default namespace.
+  const configDir = process.env.CLAUDE_SECURESTORAGE_CONFIG_DIR ?? process.env.CLAUDE_CONFIG_DIR;
+  const suffix = configDir
+    ? `-${createHash("sha256").update(configDir.normalize("NFC")).digest("hex").substring(0, 8)}`
+    : "";
+  return `Claude Code-credentials${suffix}`;
+}
 
 /** The token blob (Keychain on macOS, `.credentials.json` elsewhere). */
 interface ClaudeTokenPayload {
@@ -45,7 +53,7 @@ interface ClaudeCredential {
 /** Read the token payload from wherever this platform keeps it. */
 async function readPayload(): Promise<ClaudeTokenPayload | null> {
   if (isMac) {
-    const raw = await keychainGet(KEYCHAIN_SERVICE);
+    const raw = await keychainGet(keychainService());
     if (!raw) {
       return null;
     }
@@ -61,7 +69,7 @@ async function readPayload(): Promise<ClaudeTokenPayload | null> {
 /** Write the token payload back to the platform store. */
 async function writePayload(payload: ClaudeTokenPayload): Promise<void> {
   if (isMac) {
-    await keychainSet(KEYCHAIN_SERVICE, JSON.stringify(payload));
+    await keychainSet(keychainService(), JSON.stringify(payload));
     return;
   }
   await writeJson(claudeCredentialsFile(), payload);
