@@ -99,7 +99,6 @@ export const codexProvider: Provider = {
   id: "codex",
   displayName: "Codex (OpenAI)",
   aliases: ["openai", "gpt", "chatgpt"],
-  kana: "コーデックス",
   homes: {
     env: "CODEX_HOME",
     command: "codex",

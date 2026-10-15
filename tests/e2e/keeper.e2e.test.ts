@@ -1,5 +1,5 @@
 /**
- * End-to-end scenarios for `tg keeper` (見張り番), run against the fake
+ * End-to-end scenarios for `tg keeper`, run against the fake
  * provider CLIs in a throwaway sandbox (see ./harness.ts).
  */
 import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";

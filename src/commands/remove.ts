@@ -41,7 +41,7 @@ export async function runRemove(provider: Provider, name?: string, options: Remo
   if (account.home) {
     await discardHome(provider, account.home);
   }
-  logger.success(`Removed ${provider.displayName} account ${ink.bold(account.name)}. さようなら`);
+  logger.success(`Removed ${provider.displayName} account ${ink.bold(account.name)}.`);
   if (wasLive) {
     logger.hint(`${provider.displayName} is still signed in as it; save it again any time with: tg add ${provider.id}`);
   }

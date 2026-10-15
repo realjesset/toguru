@@ -123,7 +123,6 @@ export const claudeProvider: Provider = {
   id: "claude",
   displayName: "Claude Code (Anthropic)",
   aliases: ["anthropic", "claude-code"],
-  kana: "クロード",
   homes: {
     env: "CLAUDE_CONFIG_DIR",
     command: "claude",

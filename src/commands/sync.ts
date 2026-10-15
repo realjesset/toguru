@@ -38,7 +38,7 @@ export async function runSync(providers: readonly Provider[]): Promise<void> {
         } else if (state.captured) {
           logger.success(`${head} captured a fresh token for ${name}.`);
         } else {
-          logger.info(`${ink.sumi("·")} ${head} ${name} already up to date.`);
+          logger.info(`${ink.muted("·")} ${head} ${name} already up to date.`);
         }
         break;
       }
@@ -47,7 +47,7 @@ export async function runSync(providers: readonly Provider[]): Promise<void> {
         logger.hint(`Save it with: tg add ${provider.id}`);
         break;
       default:
-        logger.info(`${ink.sumi("·")} ${head} nobody is signed in.`);
+        logger.info(`${ink.muted("·")} ${head} nobody is signed in.`);
         break;
     }
     for (const account of store.list(provider.id).filter((candidate) => candidate.home)) {

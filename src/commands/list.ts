@@ -42,7 +42,7 @@ export async function runList(providers: readonly Provider[], options: ListOptio
     const active = store.active(provider.id);
     logger.out(providerHeading(provider));
     if (accounts.length === 0) {
-      logger.out(ink.sumi(`  まだありません · no accounts yet — tg ${provider.id} auth`));
+      logger.out(ink.muted(`  no accounts yet — tg ${provider.id} auth`));
     }
     const width = nameWidth(accounts);
     for (const account of accounts) {

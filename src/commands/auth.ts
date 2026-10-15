@@ -6,7 +6,7 @@ import { Store, type StoredAccount } from "../core/store";
 import { allProviders } from "../providers/registry";
 import type { Provider } from "../providers/types";
 import { terminalPrompter } from "../ui/prompts";
-import { ink, kao, mark } from "../ui/theme";
+import { face, ink, mark } from "../ui/theme";
 import { ToguruError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { validateAccountName } from "../utils/strings";
@@ -31,7 +31,7 @@ function requireLogin(provider: Provider): NonNullable<Provider["login"]> {
 async function reauthInHome(provider: Provider, store: Store, account: StoredAccount, home: string): Promise<void> {
   const login = requireLogin(provider);
   const before = provider.describe(account.credential);
-  logger.info(`${ink.sakura(mark.petal)} Re-authenticating ${ink.bold(account.name)} in its home…`);
+  logger.info(`${ink.pink(mark.petal)} Re-authenticating ${ink.bold(account.name)} in its home…`);
   await login({ ...(before.email ? { email: before.email } : {}), slot: { dir: home } });
   const credential = await provider.readActive({ dir: home });
   if (!credential) {
@@ -42,7 +42,7 @@ async function reauthInHome(provider: Provider, store: Store, account: StoredAcc
   if (before.identity && fresh.identity && before.identity !== fresh.identity) {
     logger.warn(`The home of "${account.name}" is now signed in as ${fresh.email ?? "a different account"}.`);
   }
-  logger.success(`Re-authenticated ${ink.bold(account.name)} in its home  ${ink.sakura(kao.sparkle)}`);
+  logger.success(`Re-authenticated ${ink.bold(account.name)} in its home  ${ink.pink(face.sparkle)}`);
 }
 
 /** Create a new profile by logging in inside a brand-new home. */
@@ -54,7 +54,7 @@ async function loginIntoNewHome(provider: Provider, store: Store, name: string):
   }
   const dir = homePath(provider, name);
   await prepareHome(provider, dir);
-  logger.info(`${ink.sakura(mark.petal)} Logging in to ${provider.displayName} inside a new home for ${ink.bold(name)}…`);
+  logger.info(`${ink.pink(mark.petal)} Logging in to ${provider.displayName} inside a new home for ${ink.bold(name)}…`);
   try {
     await login({ slot: { dir } });
   } catch (error) {
@@ -68,7 +68,7 @@ async function loginIntoNewHome(provider: Provider, store: Store, name: string):
   }
   await store.upsert(provider.id, name, credential, { label: provider.describe(credential).email });
   await store.setHome(provider.id, name, dir);
-  logger.success(`Saved ${ink.bold(name)} in its own home  ${ink.sakura(kao.sparkle)}`);
+  logger.success(`Saved ${ink.bold(name)} in its own home  ${ink.pink(face.sparkle)}`);
   logger.hint(`Use it with: tg run ${provider.id} ${name}   or: eval "$(tg env ${provider.id} ${name})"`);
 }
 
@@ -116,8 +116,8 @@ export async function runAuth(provider: Provider, name?: string, options: AuthOp
   const reauth = existing ? store.get(provider.id, existing.name) : undefined;
   logger.info(
     reauth
-      ? `${ink.sakura(mark.petal)} Re-authenticating ${provider.displayName} profile ${ink.bold(reauth.name)}…`
-      : `${ink.sakura(mark.petal)} Logging in to ${provider.displayName}…`,
+      ? `${ink.pink(mark.petal)} Re-authenticating ${provider.displayName} profile ${ink.bold(reauth.name)}…`
+      : `${ink.pink(mark.petal)} Logging in to ${provider.displayName}…`,
   );
   const email = reauth ? (provider.describe(reauth.credential).email ?? reauth.label) : undefined;
   await login(email ? { email } : undefined);
@@ -148,7 +148,7 @@ export async function runAuth(provider: Provider, name?: string, options: AuthOp
   const verb = placed.created ? "Saved" : "Re-authenticated";
   const shown = placed.label && placed.label !== placed.name ? ` (${placed.label})` : "";
   logger.success(
-    `${verb} ${provider.displayName} account ${ink.bold(placed.name)}${shown} — it's live now  ${ink.sakura(kao.sparkle)}`,
+    `${verb} ${provider.displayName} account ${ink.bold(placed.name)}${shown} — it's live now  ${ink.pink(face.sparkle)}`,
   );
 }
 

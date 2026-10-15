@@ -26,15 +26,15 @@ export function createProgram(): Command {
     .name("tg")
     .description(DESCRIPTION)
     .version(VERSION, "-v, --version", "print the version number")
-    .showHelpAfterError(ink.sumi("(add --help for usage)"))
+    .showHelpAfterError(ink.muted("(add --help for usage)"))
     // Lets `tg run claude work --resume` hand `--resume` to claude.
     .enablePositionalOptions()
     .configureHelp({
       showGlobalOptions: true,
-      styleTitle: (title) => ink.bold(ink.sakura(title)),
-      styleSubcommandText: (text) => ink.momo(text),
-      styleOptionText: (text) => ink.sora(text),
-      styleArgumentText: (text) => ink.fuji(text),
+      styleTitle: (title) => ink.bold(ink.pink(title)),
+      styleSubcommandText: (text) => ink.rose(text),
+      styleOptionText: (text) => ink.blue(text),
+      styleArgumentText: (text) => ink.lavender(text),
     })
     .addHelpText("before", `${banner()}\n`);
 

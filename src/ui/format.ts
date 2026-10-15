@@ -37,13 +37,13 @@ function shortSpan(ms: number): string {
 export function authBadge(state: AuthState, descriptor: AccountDescriptor, now: number = Date.now()): string {
   switch (state) {
     case "valid":
-      return ink.matcha(mark.ok);
+      return ink.green(mark.ok);
     case "reauth-soon":
-      return ink.yuzu(`${mark.soon} re-auth in ${shortSpan((descriptor.refreshExpiresAt ?? now) - now)}`);
+      return ink.yellow(`${mark.soon} re-auth in ${shortSpan((descriptor.refreshExpiresAt ?? now) - now)}`);
     case "expired":
-      return ink.sumi(`${mark.refresh} auto-refresh`);
+      return ink.muted(`${mark.refresh} auto-refresh`);
     case "needs-reauth":
-      return `${ink.beni(`${mark.error} re-auth`)} ${ink.sumi("要ログイン")}`;
+      return ink.red(`${mark.error} re-auth`);
     default:
       return "";
   }
@@ -55,18 +55,18 @@ export function authSummary(state: AuthState, descriptor: AccountDescriptor, now
   switch (state) {
     case "valid": {
       if (descriptor.authKind === "api-key") {
-        return ink.matcha(`${mark.ok} API key — never expires`);
+        return ink.green(`${mark.ok} API key — never expires`);
       }
-      const renews = expiresAt ? ink.sumi(` · token renews ${relativeTime(expiresAt, now)}`) : "";
-      const until = refreshExpiresAt ? ink.sumi(` · re-login due ${relativeTime(refreshExpiresAt, now)}`) : "";
-      return `${ink.matcha(`${mark.ok} signed in`)}${renews}${until}`;
+      const renews = expiresAt ? ink.muted(` · token renews ${relativeTime(expiresAt, now)}`) : "";
+      const until = refreshExpiresAt ? ink.muted(` · re-login due ${relativeTime(refreshExpiresAt, now)}`) : "";
+      return `${ink.green(`${mark.ok} signed in`)}${renews}${until}`;
     }
     case "reauth-soon":
-      return ink.yuzu(
+      return ink.yellow(
         `${mark.soon} login ends ${relativeTime(refreshExpiresAt ?? now, now)} — refreshing can't extend it, sign in again`,
       );
     case "expired":
-      return ink.sora(
+      return ink.blue(
         `${mark.refresh} token expired ${relativeTime(expiresAt ?? now, now)} — renews itself on next use`,
       );
     case "needs-reauth": {
@@ -74,10 +74,10 @@ export function authSummary(state: AuthState, descriptor: AccountDescriptor, now
         refreshExpiresAt !== undefined && refreshExpiresAt <= now
           ? `login ended ${relativeTime(refreshExpiresAt, now)}`
           : "no refresh token";
-      return ink.beni(`${mark.error} signed out (${why}) — sign in again`);
+      return ink.red(`${mark.error} signed out (${why}) — sign in again`);
     }
     default:
-      return ink.sumi("· auth status unknown");
+      return ink.muted("· auth status unknown");
   }
 }
 
@@ -110,12 +110,12 @@ export function accountRow(
 ): string {
   const now = options.now ?? Date.now();
   const descriptor = provider.describe(account.credential);
-  const marker = account.home ? ink.sora(mark.home) : options.live ? ink.sakura(mark.live) : ink.sumi(mark.idle);
+  const marker = account.home ? ink.blue(mark.home) : options.live ? ink.pink(mark.live) : ink.muted(mark.idle);
   const name = options.live ? ink.bold(account.name) : account.name;
   const pad = " ".repeat(Math.max(0, options.width - account.name.length));
   const meta = accountMeta(account, descriptor);
   const badge = authBadge(classifyAuth(descriptor, now), descriptor, now);
-  return [`${marker} ${name}${pad}`, meta ? ink.sumi(meta) : "", badge].filter(Boolean).join("  ");
+  return [`${marker} ${name}${pad}`, meta ? ink.muted(meta) : "", badge].filter(Boolean).join("  ");
 }
 
 /** Column width that fits every account name in a list. */

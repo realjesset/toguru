@@ -88,8 +88,6 @@ export interface Provider {
   readonly displayName: string;
   /** Extra names accepted on the command line (e.g. `anthropic`, `gpt`). */
   readonly aliases: readonly string[];
-  /** Katakana reading shown next to the name. */
-  readonly kana?: string;
   /** Definition file for user-declared providers; absent for built-ins. */
   readonly source?: string;
   /** Account-home support; absent when the CLI can't be pointed at another dir. */

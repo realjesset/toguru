@@ -47,21 +47,22 @@ to one to switch / re-authenticate / rename / remove, or log in to a new one.
 ```
 $ tg
 
-❀ トグル toguru v0.1.x
-  ↳ アカウント切り替え · account toggle
+❀ toguru v0.1.x
+  ↳ account switcher for Claude, Codex & more
+  ○ keeper is off — tg keeper start
 
-❀ Pick an account  アカウントを選んでね
- ▍Claude Code (Anthropic)  クロード
+❀ Pick an account
+ ▍Claude Code (Anthropic)
 ❯ ● you@example.com   max  ✓
   ○ work@company.com  team  ◔ re-auth in 2d
- ▍Codex (OpenAI)  コーデックス
+ ▍Codex (OpenAI)
   ● me@gmail.com      plus  ✓
 
-  ✚ Log in to a new account  新規ログイン
-  ✕ Exit  またね
+  ✚ Log in to a new account
+  ✕ Exit
 
   ✓ signed in · token renews in 8 hours · re-login due in 27 days
-↑↓ move うごく  ·  ⏎ pick えらぶ
+↑↓ move  ·  ⏎ pick
 ```
 
 `●` marks the account that's live right now. The line under the menu describes
@@ -149,7 +150,7 @@ name). The same email in two Claude orgs becomes `you@example.com` and
 | `tg home [provider] [name]` | Give a profile its own config dir (`--login` to start one with a fresh login, `--leave` to bring it back) |
 | `tg run <provider> <name> [args…]` | Run the CLI as a profile that lives in its own home (`tg run claude work -- --resume`) |
 | `tg env <provider> <name>` | Print shell lines pointing this shell at a profile's home: `eval "$(tg env claude work)"` |
-| `tg keeper start\|stop\|status\|run` | The background watcher (見張り番) — see below |
+| `tg keeper start\|stop\|status\|run` | The background watcher — see below |
 | `tg providers` | List providers, including ones you declared (`tg providers init <id>` to start one) |
 | `tg update` | Update to the latest version (auto-detects npm/bun/pnpm/yarn) |
 
@@ -238,7 +239,7 @@ always means "this is what's signed in right now".
 > `auth.json`, so tg refuses to switch Codex rather than pretend. Set it to
 > `"file"` and run `codex login` once.
 
-### The keeper (見張り番)
+### The keeper
 
 Capturing only works while tg is running. `tg keeper start` runs a small
 background watcher that does the same capture every few minutes (`--interval`,
@@ -292,7 +293,6 @@ starter):
   "id": "gemini",
   "name": "Gemini CLI (Google)",
   "aliases": ["google"],
-  "kana": "ジェミニ",
   "dir": "~/.gemini",
   "files": ["oauth_creds.json", "google_accounts.json"],
   "login": ["gemini"],

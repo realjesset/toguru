@@ -6,7 +6,7 @@ import { allProviders, providerById, providerProblems } from "../providers/regis
 import type { Provider } from "../providers/types";
 import { accountRow, authSummary, nameWidth } from "../ui/format";
 import { type Choice, choose, Separator } from "../ui/prompts";
-import { banner, ink, kao, providerHeading } from "../ui/theme";
+import { banner, face, ink, providerHeading } from "../ui/theme";
 import { isToguruError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { runAdd } from "./add";
@@ -35,13 +35,13 @@ async function manageOne(provider: Provider, name: string): Promise<void> {
   const live = store.active(provider.id) === name;
   const homeChoices: Array<Choice<AccountAction>> = account.home
     ? [
-        { name: `${ink.sakura("▶")} Run ${provider.homes?.command ?? provider.id} in its home  ${ink.sumi("起動")}`, value: "run", short: "run" },
-        { name: `${ink.sora("⌂")} Leave its home (back to switching)  ${ink.sumi("引っ越し")}`, value: "leave", short: "leave home" },
+        { name: `${ink.pink("▶")} Run ${provider.homes?.command ?? provider.id} in its home`, value: "run", short: "run" },
+        { name: `${ink.blue("⌂")} Leave its home (back to switching)`, value: "leave", short: "leave home" },
       ]
     : provider.homes
       ? [
           {
-            name: `${ink.sora("⌂")} Move into its own home (no more copies)  ${ink.sumi("引っ越し")}`,
+            name: `${ink.blue("⌂")} Move into its own home (no more copies)`,
             value: "home",
             short: "move home",
             disabled: live ? "(live now — switch away first)" : false,
@@ -55,12 +55,12 @@ async function manageOne(provider: Provider, name: string): Promise<void> {
       // The live profile is already switched to; a home profile isn't switched at all.
       ...(account.home || live
         ? []
-        : [{ name: `${ink.sakura("⇄")} Switch to this account  ${ink.sumi("切り替え")}`, value: "switch" as const, short: "switch" }]),
-      { name: `${ink.sora("⟳")} Re-authenticate (opens browser)  ${ink.sumi("再ログイン")}`, value: "reauth", short: "re-auth" },
+        : [{ name: `${ink.pink("⇄")} Switch to this account`, value: "switch" as const, short: "switch" }]),
+      { name: `${ink.blue("⟳")} Re-authenticate (opens browser)`, value: "reauth", short: "re-auth" },
       ...homeChoices,
-      { name: `${ink.fuji("✎")} Rename  ${ink.sumi("名前変更")}`, value: "rename", short: "rename" },
-      { name: `${ink.beni("✖")} Remove  ${ink.sumi("削除")}`, value: "remove", short: "remove" },
-      { name: `${ink.sumi("←")} Back  ${ink.sumi("もどる")}`, value: "back", short: "back" },
+      { name: `${ink.lavender("✎")} Rename`, value: "rename", short: "rename" },
+      { name: `${ink.red("✖")} Remove`, value: "remove", short: "remove" },
+      { name: `${ink.muted("←")} Back`, value: "back", short: "back" },
     ],
   });
 
@@ -105,7 +105,7 @@ async function providerChoices(store: Store, provider: Provider): Promise<Array<
     if (!isToguruError(error)) {
       throw error;
     }
-    rows.push(new Separator(ink.beni(`  ✖ ${error.message}`)));
+    rows.push(new Separator(ink.red(`  ✖ ${error.message}`)));
     return rows;
   }
 
@@ -118,18 +118,18 @@ async function providerChoices(store: Store, provider: Provider): Promise<Array<
       name: accountRow(provider, account, { live: account.name === active, width }),
       value: { kind: "account", provider: provider.id, name: account.name },
       short: account.name,
-      description: `${authSummary(classifyAuth(descriptor), descriptor)}${account.home ? ink.sumi(" · lives in its own home") : ""}`,
+      description: `${authSummary(classifyAuth(descriptor), descriptor)}${account.home ? ink.muted(" · lives in its own home") : ""}`,
     });
   }
   if (live.kind === "unsaved") {
     rows.push({
-      name: ink.yuzu(`✚ Save the live session${live.descriptor.email ? ` (${live.descriptor.email})` : ""}`),
+      name: ink.yellow(`✚ Save the live session${live.descriptor.email ? ` (${live.descriptor.email})` : ""}`),
       value: { kind: "save", provider: provider.id },
       short: "save",
-      description: ink.sumi("Signed in, but not saved in tg yet — save it so switching away doesn't lose it."),
+      description: ink.muted("Signed in, but not saved in tg yet — save it so switching away doesn't lose it."),
     });
   } else if (accounts.length === 0) {
-    rows.push(new Separator(ink.sumi("  まだありません · no accounts yet")));
+    rows.push(new Separator(ink.muted("  no accounts yet")));
   }
   return rows;
 }
@@ -156,14 +156,14 @@ export async function runManage(options: { banner?: boolean } = {}): Promise<voi
     }
     choices.push(new Separator(" "));
     choices.push({
-      name: `${ink.sakura("✚")} Log in to a new account  ${ink.sumi("新規ログイン")}`,
+      name: `${ink.pink("✚")} Log in to a new account`,
       value: { kind: "login" },
       short: "log in",
     });
-    choices.push({ name: `${ink.sumi("✕")} Exit  ${ink.sumi("またね")}`, value: { kind: "exit" }, short: "exit" });
+    choices.push({ name: `${ink.muted("✕")} Exit`, value: { kind: "exit" }, short: "exit" });
 
     const selection = await choose<Selection>({
-      message: `Pick an account  ${ink.sumi("アカウントを選んでね")}`,
+      message: "Pick an account",
       need: "a selection",
       choices,
       pageSize: 20,
@@ -173,7 +173,7 @@ export async function runManage(options: { banner?: boolean } = {}): Promise<voi
       if (hint) {
         logger.hint(hint);
       }
-      logger.out(ink.sumi(`またね ${kao.wave}`));
+      logger.out(ink.muted(`bye ${face.wave}`));
       return;
     }
     try {

@@ -29,7 +29,6 @@ export interface ProviderDefinition {
   id: string;
   name: string;
   aliases?: string[];
-  kana?: string;
   /** Config dir holding the credential files (`~` allowed). */
   dir: string;
   /** Env var the CLI reads to relocate `dir`; enables account homes. */
@@ -110,7 +109,7 @@ export function parseDefinition(raw: unknown, taken: ReadonlySet<string>): Provi
   if (isStringArray(raw.shared) && !raw.shared.every(isContained)) {
     problems.push(`"shared" entries must be relative to "dir"`);
   }
-  for (const key of ["kana", "dirEnv", "command"] as const) {
+  for (const key of ["dirEnv", "command"] as const) {
     if (raw[key] !== undefined && typeof raw[key] !== "string") {
       problems.push(`"${key}" must be a string`);
     }
@@ -197,7 +196,6 @@ export function definedProvider(definition: ProviderDefinition, source: string):
     displayName: definition.name,
     aliases: (definition.aliases ?? []).map((alias) => alias.toLowerCase()),
     source,
-    ...(definition.kana ? { kana: definition.kana } : {}),
     ...(homes ? { homes } : {}),
 
     async readActive(slot?: Slot): Promise<Credential | null> {

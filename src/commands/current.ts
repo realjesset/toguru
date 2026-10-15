@@ -59,20 +59,20 @@ async function printStatus(store: Store, provider: Provider): Promise<void> {
     if (!isToguruError(error)) {
       throw error;
     }
-    logger.out(`  ${ink.beni(mark.error)} ${error.message}`);
+    logger.out(`  ${ink.red(mark.error)} ${error.message}`);
     if (error.hint) {
-      logger.out(ink.sumi(`    ${mark.hint} ${error.hint}`));
+      logger.out(ink.muted(`    ${mark.hint} ${error.hint}`));
     }
     return;
   }
 
   if (state.kind === "logged-out") {
-    logger.out(ink.sumi(`  ${mark.idle} nobody signed in · ログアウト中`));
+    logger.out(ink.muted(`  ${mark.idle} nobody signed in`));
   } else if (state.kind === "unsaved") {
     const { descriptor } = state;
-    logger.out(`  ${ink.yuzu(mark.live)} ${ink.bold(descriptor.email ?? "unknown account")} ${ink.sumi("· live, not saved yet")}`);
+    logger.out(`  ${ink.yellow(mark.live)} ${ink.bold(descriptor.email ?? "unknown account")} ${ink.muted("· live, not saved yet")}`);
     logger.out(`    ${authSummary(classifyAuth(descriptor), descriptor)}`);
-    logger.out(ink.sumi(`    ${mark.hint} save it: tg add ${provider.id}`));
+    logger.out(ink.muted(`    ${mark.hint} save it: tg add ${provider.id}`));
   } else {
     const account = store.get(provider.id, state.name);
     if (account) {
@@ -81,12 +81,12 @@ async function printStatus(store: Store, provider: Provider): Promise<void> {
       logger.out(`  ${accountRow(provider, account, { live: true, width: 0 })}`);
       logger.out(`    ${authSummary(auth, descriptor)}`);
       if (state.adopted) {
-        logger.out(ink.sumi(`    ${mark.refresh} switched outside tg — now marked active`));
+        logger.out(ink.muted(`    ${mark.refresh} switched outside tg — now marked active`));
       } else if (state.captured) {
-        logger.out(ink.sumi(`    ${mark.refresh} captured a fresh token from the live session`));
+        logger.out(ink.muted(`    ${mark.refresh} captured a fresh token from the live session`));
       }
       if (auth === "needs-reauth" || auth === "reauth-soon") {
-        logger.out(ink.sumi(`    ${mark.hint} sign in again: tg ${provider.id} auth ${account.name}`));
+        logger.out(ink.muted(`    ${mark.hint} sign in again: tg ${provider.id} auth ${account.name}`));
       }
     }
   }
@@ -96,7 +96,7 @@ async function printStatus(store: Store, provider: Provider): Promise<void> {
     await captureHome(provider, store, account);
     const fresh = store.get(provider.id, account.name) ?? account;
     const descriptor = provider.describe(fresh.credential);
-    logger.out(`  ${accountRow(provider, fresh, { live: false, width: 0 })} ${ink.sumi("· own home")}`);
+    logger.out(`  ${accountRow(provider, fresh, { live: false, width: 0 })} ${ink.muted("· own home")}`);
     logger.out(`    ${authSummary(classifyAuth(descriptor), descriptor)}`);
   }
 
@@ -106,8 +106,8 @@ async function printStatus(store: Store, provider: Provider): Promise<void> {
     .filter((account) => !account.home && (state.kind !== "saved" || account.name !== state.name));
   if (others.length > 0) {
     const stale = others.filter((account) => classifyAuth(provider.describe(account.credential)) === "needs-reauth");
-    const note = stale.length > 0 ? ink.beni(` · ${stale.length} need${stale.length === 1 ? "s" : ""} re-auth`) : "";
-    logger.out(ink.sumi(`    + ${others.length} more saved${note}`));
+    const note = stale.length > 0 ? ink.red(` · ${stale.length} need${stale.length === 1 ? "s" : ""} re-auth`) : "";
+    logger.out(ink.muted(`    + ${others.length} more saved${note}`));
   }
 }
 

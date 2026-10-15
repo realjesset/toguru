@@ -6,15 +6,15 @@ import { ink, mark } from "./theme";
 export { Separator };
 
 const ACTION_WORDS: Record<string, string> = {
-  navigate: "move うごく",
-  select: "pick えらぶ",
+  navigate: "move",
+  select: "pick",
 };
 
 const baseTheme = {
-  prefix: { idle: ink.sakura(mark.petal), done: ink.matcha(mark.flower) },
+  prefix: { idle: ink.pink(mark.petal), done: ink.green(mark.flower) },
   style: {
-    answer: ink.sakura,
-    help: ink.sumi,
+    answer: ink.pink,
+    help: ink.muted,
     // Rows carry their own colours; re-colouring the active one would clash.
     highlight: (text: string) => text,
   },
@@ -22,12 +22,12 @@ const baseTheme = {
 
 const selectTheme = {
   ...baseTheme,
-  icon: { cursor: ink.sakura("❯") },
+  icon: { cursor: ink.pink("❯") },
   style: {
     ...baseTheme.style,
     description: (text: string) => `  ${text}`,
     keysHelpTip: (keys: [string, string][]) =>
-      ink.sumi(keys.map(([key, action]) => `${key} ${ACTION_WORDS[action] ?? action}`).join("  ·  ")),
+      ink.muted(keys.map(([key, action]) => `${key} ${ACTION_WORDS[action] ?? action}`).join("  ·  ")),
   },
 };
 

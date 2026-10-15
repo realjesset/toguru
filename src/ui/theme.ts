@@ -3,30 +3,29 @@ import type { Provider } from "../providers/types";
 import { VERSION } from "../version";
 
 /**
- * Soft 256-colour palette named after Japanese colours. Every tint collapses to
- * plain text when colour is off (NO_COLOR, pipes, CI), via picocolors' check.
+ * Soft 256-colour palette. Every tint collapses to plain text when colour is
+ * off (NO_COLOR, pipes, CI), via picocolors' check.
  */
 function tint(code: number): (text: string) => string {
   return (text) => (pc.isColorSupported ? `\x1b[38;5;${code}m${text}\x1b[39m` : text);
 }
 
 export const ink = {
-  /** 桜 sakura — the brand pink. */
-  sakura: tint(218),
-  /** 桃 momo — deeper pink for emphasis. */
-  momo: tint(205),
-  /** 抹茶 matcha — success. */
-  matcha: tint(114),
-  /** 空 sora — information. */
-  sora: tint(117),
-  /** 柚子 yuzu — warnings. */
-  yuzu: tint(221),
-  /** 紅 beni — errors. */
-  beni: tint(203),
-  /** 藤 fuji — quiet accents. */
-  fuji: tint(183),
-  /** 墨 sumi — muted ink. */
-  sumi: pc.dim,
+  /** The brand pink. */
+  pink: tint(218),
+  /** Deeper pink for emphasis. */
+  rose: tint(205),
+  /** Success. */
+  green: tint(114),
+  /** Information. */
+  blue: tint(117),
+  /** Warnings. */
+  yellow: tint(221),
+  /** Errors. */
+  red: tint(203),
+  /** Quiet accents. */
+  lavender: tint(183),
+  muted: pc.dim,
   bold: pc.bold,
 };
 
@@ -46,23 +45,22 @@ export const mark = {
 };
 
 /** Little faces for the moments that deserve one. */
-export const kao = {
+export const face = {
   cheer: "٩(◕‿◕)۶",
-  sparkle: "(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧",
-  wave: "(＾-＾)ノ",
+  sparkle: "(◕‿◕)✧",
+  wave: "(^-^)/",
   sad: "(╥﹏╥)",
-  sleepy: "(－_－) zzZ",
+  sleepy: "(-_-) zzZ",
 };
 
-/** `▍Claude Code (Anthropic)  クロード` */
+/** `▍Claude Code (Anthropic)` */
 export function providerHeading(provider: Provider): string {
-  const kana = provider.kana ? `  ${ink.fuji(provider.kana)}` : "";
-  return `${ink.sakura(mark.bar)}${ink.bold(provider.displayName)}${kana}`;
+  return `${ink.pink(mark.bar)}${ink.bold(provider.displayName)}`;
 }
 
 /** Two-line masthead for the hub, list and status screens. */
 export function banner(): string {
-  const title = `${ink.sakura(mark.petal)} ${ink.bold(ink.momo("トグル"))} ${ink.bold("toguru")} ${ink.sumi(`v${VERSION}`)}`;
-  const tagline = ink.sumi(`  ${mark.hint} アカウント切り替え · account toggle`);
+  const title = `${ink.pink(mark.petal)} ${ink.bold(ink.rose("toguru"))} ${ink.muted(`v${VERSION}`)}`;
+  const tagline = ink.muted(`  ${mark.hint} account switcher for Claude, Codex & more`);
   return `${title}\n${tagline}`;
 }

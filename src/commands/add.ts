@@ -3,7 +3,7 @@ import { placeLogin } from "../core/placement";
 import { Store } from "../core/store";
 import type { Provider } from "../providers/types";
 import { terminalPrompter } from "../ui/prompts";
-import { ink, kao } from "../ui/theme";
+import { face, ink } from "../ui/theme";
 import { ToguruError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { PROVIDER_ARG, resolveProvider } from "./shared";
@@ -39,7 +39,7 @@ export async function runAdd(provider: Provider, name?: string, options: AddOpti
     return;
   }
   const shown = placed.label && placed.label !== placed.name ? ` (${placed.label})` : "";
-  logger.success(`Saved ${provider.displayName} account ${ink.bold(placed.name)}${shown}  ${ink.sakura(kao.cheer)}`);
+  logger.success(`Saved ${provider.displayName} account ${ink.bold(placed.name)}${shown}  ${ink.pink(face.cheer)}`);
   if (placed.alsoSavedAs) {
     logger.hint(`The same login is also saved as "${placed.alsoSavedAs}".`);
   }

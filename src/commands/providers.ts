@@ -29,15 +29,15 @@ export function runProviders(options: { json?: boolean } = {}): void {
   for (const provider of providers) {
     logger.out(providerHeading(provider));
     const bits = [
-      provider.source ? ink.fuji(`declared · ${provider.source}`) : ink.sumi("built-in"),
-      provider.aliases.length > 0 ? ink.sumi(`aliases: ${provider.aliases.join(", ")}`) : "",
-      provider.login ? ink.sumi("login ✓") : ink.sumi("no login (use tg add)"),
-      provider.homes ? ink.sumi(`homes via ${provider.homes.env}`) : "",
+      provider.source ? ink.lavender(`declared · ${provider.source}`) : ink.muted("built-in"),
+      provider.aliases.length > 0 ? ink.muted(`aliases: ${provider.aliases.join(", ")}`) : "",
+      provider.login ? ink.muted("login ✓") : ink.muted("no login (use tg add)"),
+      provider.homes ? ink.muted(`homes via ${provider.homes.env}`) : "",
     ].filter(Boolean);
-    logger.out(`  ${ink.sumi(provider.id)}  ${bits.join(ink.sumi("  ·  "))}`);
+    logger.out(`  ${ink.muted(provider.id)}  ${bits.join(ink.muted("  ·  "))}`);
   }
   logger.out("");
-  logger.out(ink.sumi(`Declare your own in ${providersDir()}/<id>.json — start one with: tg providers init <id>`));
+  logger.out(ink.muted(`Declare your own in ${providersDir()}/<id>.json — start one with: tg providers init <id>`));
   for (const problem of providerProblems()) {
     logger.warn(`Skipped: ${problem}`);
   }
@@ -55,7 +55,7 @@ export async function runProvidersInit(id: string): Promise<void> {
   await writeJson(file, exampleDefinition(id));
   logger.success(`Wrote ${file}`);
   logger.hint(`Edit "dir", "files", "login" and "fields" to match the CLI, then: tg list ${id}`);
-  logger.hint(`Add "dirEnv" (the CLI's config-dir env var) to unlock account homes ${ink.sora(mark.home)}`);
+  logger.hint(`Add "dirEnv" (the CLI's config-dir env var) to unlock account homes ${ink.blue(mark.home)}`);
 }
 
 export function providersCommand(): Command {

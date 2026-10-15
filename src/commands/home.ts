@@ -5,7 +5,7 @@ import { captureHome } from "../core/reconcile";
 import { Store } from "../core/store";
 import { envForSlot } from "../providers/slot";
 import type { Provider } from "../providers/types";
-import { ink, kao } from "../ui/theme";
+import { face, ink } from "../ui/theme";
 import { ToguruError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { runAttached } from "../utils/proc";
@@ -47,8 +47,8 @@ export async function runHome(provider: Provider, name?: string, options: HomeOp
     return;
   }
   const dir = await moveIntoHome(provider, store, account);
-  logger.success(`${ink.bold(account.name)} now lives in its own home  ${ink.sakura(kao.cheer)}`);
-  logger.hint(ink.sumi(dir));
+  logger.success(`${ink.bold(account.name)} now lives in its own home  ${ink.pink(face.cheer)}`);
+  logger.hint(ink.muted(dir));
   logger.hint(`Run it: tg run ${provider.id} ${account.name}   ·   or in this shell: eval "$(tg env ${provider.id} ${account.name})"`);
 }
 

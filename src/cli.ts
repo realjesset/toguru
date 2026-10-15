@@ -4,7 +4,7 @@ import { runManage } from "./commands/manage";
 import { createProgram } from "./program";
 import { allProviders } from "./providers/registry";
 import { canPrompt } from "./ui/prompts";
-import { ink, kao } from "./ui/theme";
+import { face, ink } from "./ui/theme";
 import { isToguruError } from "./utils/errors";
 import { logger } from "./utils/logger";
 
@@ -19,7 +19,7 @@ async function main(argv: string[]): Promise<void> {
 
 main(process.argv).catch((error: unknown) => {
   if (error instanceof Error && error.name === "ExitPromptError") {
-    logger.info(ink.sumi(`またね ${kao.wave}`));
+    logger.info(ink.muted(`bye ${face.wave}`));
     process.exit(130);
   }
   if (isToguruError(error)) {

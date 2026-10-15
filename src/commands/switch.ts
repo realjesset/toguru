@@ -7,7 +7,7 @@ import { Store, type StoredAccount } from "../core/store";
 import type { Provider } from "../providers/types";
 import { relativeTime } from "../ui/format";
 import { agree, canPrompt, terminalPrompter } from "../ui/prompts";
-import { ink, kao } from "../ui/theme";
+import { face, ink } from "../ui/theme";
 import { logger } from "../utils/logger";
 import { runAuth } from "./auth";
 import { findAccount, PROVIDER_ARG, pickAccount, resolveProvider } from "./shared";
@@ -72,12 +72,12 @@ export async function runSwitch(provider: Provider, name?: string): Promise<void
 
   const { changed } = await swapLive(provider, store, account.name);
   if (changed) {
-    const label = account.label && account.label !== account.name ? ink.sumi(` (${account.label})`) : "";
+    const label = account.label && account.label !== account.name ? ink.muted(` (${account.label})`) : "";
     logger.success(
-      `Switched ${provider.displayName} → ${ink.bold(ink.sakura(account.name))}${label}  ${ink.sakura(kao.sparkle)}`,
+      `Switched ${provider.displayName} → ${ink.bold(ink.pink(account.name))}${label}  ${ink.pink(face.sparkle)}`,
     );
   } else {
-    logger.info(`${ink.sakura("✿")} ${provider.displayName} is already on ${ink.bold(account.name)}.`);
+    logger.info(`${ink.pink("✿")} ${provider.displayName} is already on ${ink.bold(account.name)}.`);
   }
   await adviseOnAuth(provider, store.get(provider.id, account.name) ?? account);
   const hint = await keeperHint();

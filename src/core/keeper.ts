@@ -15,10 +15,10 @@ import { captureHome, type LiveState, reconcile } from "./reconcile";
 import { Store, type StoredAccount } from "./store";
 
 /**
- * The keeper (見張り番, mihariban — the watchman) is a background loop that
- * captures whatever the official CLIs write into their live slots, so a saved
- * profile never misses a refresh-token rotation, and warns before a login's
- * hard deadline. It never refreshes tokens itself: it only watches.
+ * The keeper is a background loop that captures whatever the official CLIs
+ * write into their live slots, so a saved profile never misses a
+ * refresh-token rotation, and warns before a login's hard deadline. It never
+ * refreshes tokens itself: it only watches.
  */
 
 /** A saved profile whose login ends soon or has already ended. */
@@ -376,7 +376,7 @@ async function keeperPass(notifyEnabled: boolean): Promise<void> {
       const key = `${alert.provider}:${alert.name}:${alert.state}:${alert.deadline}`;
       next[key] = notified[key] ?? report.at;
       if (!notified[key]) {
-        await notify("toguru 見張り番", describeAlert(alert, Date.parse(report.at)));
+        await notify("toguru keeper", describeAlert(alert, Date.parse(report.at)));
       }
     }
     patch.notified = next;
@@ -396,7 +396,7 @@ export async function runKeeper(options: { intervalMs: number; once?: boolean; n
   }
   const status = await keeperStatus();
   if (status.running && status.pid !== process.pid) {
-    throw new ToguruError(`見張り番 is already running (pid ${status.pid}).`, "Stop it with: tg keeper stop");
+    throw new ToguruError(`The keeper is already running (pid ${status.pid}).`, "Stop it with: tg keeper stop");
   }
   const files = keeperFiles();
   await fs.mkdir(path.dirname(files.pid), { recursive: true });
@@ -404,7 +404,7 @@ export async function runKeeper(options: { intervalMs: number; once?: boolean; n
     await fs.writeFile(files.pid, `${process.pid}\n`, { flag: "wx" });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-      throw new ToguruError("Another 見張り番 just started.", "Check it with: tg keeper status");
+      throw new ToguruError("Another keeper just started.", "Check it with: tg keeper status");
     }
     throw error;
   }
@@ -463,7 +463,7 @@ export async function startKeeper(intervalMs: number): Promise<{ pid: number; al
   if (!exited) {
     child.kill();
   }
-  throw new ToguruError("見張り番 didn't start.", `See its log: ${files.log}`);
+  throw new ToguruError("The keeper didn't start.", `See its log: ${files.log}`);
 }
 
 /** Stop the running keeper; false when none was running. */
@@ -482,7 +482,7 @@ export async function stopKeeper(): Promise<boolean> {
     await sleep(POLL_MS);
   }
   if (isAlive(pid)) {
-    throw new ToguruError(`見張り番 (pid ${pid}) didn't stop.`, `Force it with: kill -9 ${pid}`);
+    throw new ToguruError(`The keeper (pid ${pid}) didn't stop.`, `Force it with: kill -9 ${pid}`);
   }
   if ((await readPid()) === pid) {
     await fs.rm(keeperFiles().pid, { force: true });
@@ -502,7 +502,7 @@ export async function keeperHint(now: number = Date.now()): Promise<string | und
       return undefined;
     }
     await updateKeeperState({ lastHintAt: new Date(now).toISOString() });
-    return "tip: `tg keeper start` keeps saved logins captured in the background (見張り番)";
+    return "tip: `tg keeper start` keeps saved logins captured in the background";
   } catch {
     return undefined; // advisory only: never fail the command that asked
   }

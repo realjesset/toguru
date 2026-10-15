@@ -14,8 +14,8 @@ export const PROVIDER_ARG = "provider (claude | codex | a declared one — see `
 export async function keeperLine(): Promise<string> {
   const { running, pid } = await keeperStatus();
   return running
-    ? ink.sumi(`  ${ink.matcha(mark.ok)} 見張り番 keeper is watching (pid ${pid})`)
-    : ink.sumi(`  ${mark.idle} 見張り番 keeper is off — tg keeper start`);
+    ? ink.muted(`  ${ink.green(mark.ok)} keeper is watching (pid ${pid})`)
+    : ink.muted(`  ${mark.idle} keeper is off — tg keeper start`);
 }
 
 /**
@@ -27,7 +27,7 @@ export async function resolveProvider(name?: string): Promise<Provider> {
     return getProvider(name);
   }
   return choose({
-    message: "Which provider?  どれ？",
+    message: "Which provider?",
     need: "a provider",
     choices: allProviders().map((provider) => ({
       name: providerHeading(provider),
