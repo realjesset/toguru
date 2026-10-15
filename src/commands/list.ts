@@ -1,42 +1,31 @@
 import { Command } from "commander";
-import pc from "picocolors";
 import { classifyAuth } from "../core/auth-status";
 import { Store } from "../core/store";
-import { getProvider, providerIds, providers } from "../providers/registry";
-import type { ProviderId } from "../providers/types";
+import type { Provider } from "../providers/types";
+import { accountRow, nameWidth } from "../ui/format";
+import { ink, providerHeading } from "../ui/theme";
 import { logger } from "../utils/logger";
-import { formatAccount, statusTagFor } from "./shared";
+import { PROVIDER_ARG, providersFor } from "./shared";
 
 interface ListOptions {
   json?: boolean;
 }
 
-function describePlan(providerId: ProviderId, account: { credential: Record<string, unknown> }): string {
-  const descriptor = providers[providerId].describe(account.credential);
-  const bits: string[] = [];
-  if (descriptor.plan) {
-    bits.push(descriptor.plan);
-  }
-  if (descriptor.email && descriptor.email !== "") {
-    bits.push(descriptor.email);
-  }
-  return bits.join(" · ");
-}
-
-/** Render the saved accounts for one or all providers. */
-export async function runList(providerIdsToShow: ProviderId[], options: ListOptions = {}): Promise<void> {
+/** Render the saved accounts for the given providers. */
+export async function runList(providers: readonly Provider[], options: ListOptions = {}): Promise<void> {
   const store = await Store.load();
 
   if (options.json) {
-    const payload = providerIdsToShow.map((id) => ({
-      provider: id,
-      active: store.active(id) ?? null,
-      accounts: store.list(id).map((account) => {
-        const descriptor = providers[id].describe(account.credential);
+    const payload = providers.map((provider) => ({
+      provider: provider.id,
+      active: store.active(provider.id) ?? null,
+      accounts: store.list(provider.id).map((account) => {
+        const descriptor = provider.describe(account.credential);
         return {
           name: account.name,
           label: account.label ?? null,
-          active: account.name === store.active(id),
+          active: account.name === store.active(provider.id),
+          home: account.home ?? null,
           ...descriptor,
           authState: classifyAuth(descriptor),
           addedAt: account.addedAt,
@@ -48,18 +37,16 @@ export async function runList(providerIdsToShow: ProviderId[], options: ListOpti
     return;
   }
 
-  for (const id of providerIdsToShow) {
-    const accounts = store.list(id);
-    const activeName = store.active(id);
-    logger.out(pc.bold(pc.cyan(providers[id].displayName)));
+  for (const provider of providers) {
+    const accounts = store.list(provider.id);
+    const active = store.active(provider.id);
+    logger.out(providerHeading(provider));
     if (accounts.length === 0) {
-      logger.out(pc.dim("  (no accounts — run `toguru add`)"));
-    } else {
-      for (const account of accounts) {
-        const meta = describePlan(id, account);
-        const tag = statusTagFor(providers[id], account);
-        logger.out(`  ${formatAccount(account, activeName, tag)}${meta ? pc.dim(`  ${meta}`) : ""}`);
-      }
+      logger.out(ink.sumi(`  まだありません · no accounts yet — tg ${provider.id} auth`));
+    }
+    const width = nameWidth(accounts);
+    for (const account of accounts) {
+      logger.out(`  ${accountRow(provider, account, { live: account.name === active, width })}`);
     }
     logger.out("");
   }
@@ -69,10 +56,9 @@ export function listCommand(): Command {
   return new Command("list")
     .alias("ls")
     .description("List saved accounts")
-    .argument("[provider]", "limit to claude or codex")
+    .argument("[provider]", `limit to one ${PROVIDER_ARG}`)
     .option("--json", "output machine-readable JSON", false)
     .action(async (providerArg: string | undefined, opts: ListOptions) => {
-      const ids = providerArg ? [getProvider(providerArg).id] : providerIds;
-      await runList(ids, opts);
+      await runList(providersFor(providerArg), opts);
     });
 }

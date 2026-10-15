@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { reconcileActive } from "../src/core/reconcile";
+import { reconcile } from "../src/core/reconcile";
 import { Store } from "../src/core/store";
 import type { Credential, Provider } from "../src/providers/types";
 
@@ -18,54 +18,57 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
-/** Provider stub whose "live" credential is whatever we hand it. */
+/** Provider stub whose "live" credential is whatever we hand it; identity = `who`. */
 function fakeProvider(live: Credential | null): Provider {
   return {
     id: "codex",
     displayName: "Fake",
+    aliases: [],
     readActive: async () => live,
     writeActive: async () => {},
-    describe: (c) => ({
-      accountId: (c as { accountId?: string }).accountId,
-      email: (c as { email?: string }).email,
-    }),
+    describe: (c) => ({ identity: typeof c.who === "string" ? c.who : undefined }),
   };
 }
 
-describe("reconcileActive", () => {
-  test("captures newer credentials for the same account", async () => {
+describe("reconcile", () => {
+  test("captures a refreshed token into the matching profile without touching others", async () => {
     const store = await Store.load();
-    await store.upsert("codex", "work", { accountId: "A", token: "old" });
+    await store.upsert("codex", "a", { who: "A", token: "old" }, { activate: true });
+    await store.upsert("codex", "b", { who: "B", token: "b1" });
 
-    const result = await reconcileActive(fakeProvider({ accountId: "A", token: "new" }), store);
+    const result = await reconcile(fakeProvider({ who: "A", token: "new" }), store);
 
-    expect(result).toBe("synced");
-    expect((await Store.load()).get("codex", "work")?.credential).toEqual({ accountId: "A", token: "new" });
+    expect(result).toEqual({ kind: "saved", name: "a", captured: true, adopted: false });
+    const reloaded = await Store.load();
+    expect(reloaded.get("codex", "a")?.credential).toEqual({ who: "A", token: "new" });
+    expect(reloaded.get("codex", "b")?.credential).toEqual({ who: "B", token: "b1" });
   });
 
-  test("does nothing when live matches the stored profile", async () => {
+  test("prefers the active profile when the same login is saved twice", async () => {
     const store = await Store.load();
-    await store.upsert("codex", "work", { accountId: "A", token: "same" });
+    await store.upsert("codex", "first", { who: "A", token: "x" });
+    await store.upsert("codex", "second", { who: "A", token: "x" }, { activate: true });
 
-    expect(await reconcileActive(fakeProvider({ accountId: "A", token: "same" }), store)).toBe("in-sync");
+    const result = await reconcile(fakeProvider({ who: "A", token: "y" }), store);
+
+    expect(result).toMatchObject({ kind: "saved", name: "second" });
+    expect((await Store.load()).get("codex", "first")?.credential).toEqual({ who: "A", token: "x" });
   });
 
-  test("refuses to overwrite when the live session is a different account", async () => {
+  test("a legacy active snapshot without identity is assumed live and captured", async () => {
     const store = await Store.load();
-    await store.upsert("codex", "work", { accountId: "A", token: "old" });
+    await store.upsert("codex", "legacy", { token: "old" }, { activate: true });
 
-    const result = await reconcileActive(fakeProvider({ accountId: "B", token: "other" }), store);
+    const result = await reconcile(fakeProvider({ who: "A", token: "new" }), store);
 
-    expect(result).toBe("drifted");
-    expect((await Store.load()).get("codex", "work")?.credential).toEqual({ accountId: "A", token: "old" });
+    expect(result).toMatchObject({ kind: "saved", name: "legacy", captured: true });
   });
 
-  test("noop when nothing is active or nothing is live", async () => {
-    const empty = await Store.load();
-    expect(await reconcileActive(fakeProvider({ accountId: "A" }), empty)).toBe("noop");
-
+  test("nobody logged in leaves the active marker alone", async () => {
     const store = await Store.load();
-    await store.upsert("codex", "work", { accountId: "A" });
-    expect(await reconcileActive(fakeProvider(null), store)).toBe("noop");
+    await store.upsert("codex", "a", { who: "A" }, { activate: true });
+
+    expect(await reconcile(fakeProvider(null), store)).toEqual({ kind: "logged-out" });
+    expect((await Store.load()).active("codex")).toBe("a");
   });
 });

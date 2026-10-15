@@ -1,4 +1,4 @@
-import pc from "picocolors";
+import { ink, mark } from "../ui/theme";
 
 /**
  * Tiny logger used across the CLI. Status messages go to stderr so that stdout
@@ -9,16 +9,16 @@ export const logger = {
     process.stderr.write(`${message}\n`);
   },
   success(message: string): void {
-    process.stderr.write(`${pc.green("✔")} ${message}\n`);
+    process.stderr.write(`${ink.matcha(mark.flower)} ${message}\n`);
   },
   warn(message: string): void {
-    process.stderr.write(`${pc.yellow("⚠")} ${message}\n`);
+    process.stderr.write(`${ink.yuzu(mark.warn)} ${message}\n`);
   },
   error(message: string): void {
-    process.stderr.write(`${pc.red("✖")} ${message}\n`);
+    process.stderr.write(`${ink.beni(mark.error)} ${message}\n`);
   },
   hint(message: string): void {
-    process.stderr.write(`${pc.dim(`  ↳ ${message}`)}\n`);
+    process.stderr.write(`${ink.sumi(`  ${mark.hint} ${message}`)}\n`);
   },
   /** Print structured data to stdout as formatted JSON. */
   json(value: unknown): void {

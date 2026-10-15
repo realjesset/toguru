@@ -1,31 +1,25 @@
 #!/usr/bin/env node
+import { runList } from "./commands/list";
 import { runManage } from "./commands/manage";
 import { createProgram } from "./program";
+import { allProviders } from "./providers/registry";
+import { canPrompt } from "./ui/prompts";
+import { ink, kao } from "./ui/theme";
 import { isToguruError } from "./utils/errors";
 import { logger } from "./utils/logger";
 
 async function main(argv: string[]): Promise<void> {
-  const args = argv.slice(2);
-  // No subcommand → interactive management hub.
-  if (args.length === 0) {
-    await runManage();
+  // No subcommand → the interactive hub, or a plain listing when piped.
+  if (argv.length <= 2) {
+    await (canPrompt() ? runManage() : runList(allProviders()));
     return;
   }
-  const program = createProgram();
-  await program.parseAsync(argv);
-}
-
-function isExitPrompt(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    (error as { name?: string }).name === "ExitPromptError"
-  );
+  await createProgram().parseAsync(argv);
 }
 
 main(process.argv).catch((error: unknown) => {
-  if (isExitPrompt(error)) {
-    logger.info("Cancelled.");
+  if (error instanceof Error && error.name === "ExitPromptError") {
+    logger.info(ink.sumi(`またね ${kao.wave}`));
     process.exit(130);
   }
   if (isToguruError(error)) {

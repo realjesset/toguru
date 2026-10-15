@@ -10,5 +10,8 @@ export function validateAccountName(value: string): true | string {
   if (!/^[a-zA-Z0-9._+@-]+$/.test(name)) {
     return "Use only letters, numbers and . _ + @ - (no spaces).";
   }
+  if (/^\.+$/.test(name)) {
+    return "A name can't be only dots.";
+  }
   return true;
 }

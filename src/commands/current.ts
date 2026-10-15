@@ -1,99 +1,147 @@
 import { Command } from "commander";
-import pc from "picocolors";
-import { authSummary, classifyAuth } from "../core/auth-status";
-import { reconcileActive } from "../core/reconcile";
+import { classifyAuth } from "../core/auth-status";
+import { captureHome, inspectLive, type LiveState, reconcile } from "../core/reconcile";
 import { Store } from "../core/store";
-import { getProvider, providerIds, providers } from "../providers/registry";
-import type { AccountDescriptor, ProviderId } from "../providers/types";
+import type { Provider } from "../providers/types";
+import { accountRow, authSummary } from "../ui/format";
+import { canPrompt } from "../ui/prompts";
+import { banner, ink, mark, providerHeading } from "../ui/theme";
+import { isToguruError } from "../utils/errors";
 import { logger } from "../utils/logger";
 import { runManage } from "./manage";
+import { keeperLine, PROVIDER_ARG, providersFor } from "./shared";
 
 interface CurrentOptions {
   json?: boolean;
 }
 
-/** Stable JSON string for comparing two credential blobs. */
-function fingerprint(value: unknown): string {
-  return JSON.stringify(value);
-}
-
-async function describeProvider(store: Store, id: ProviderId) {
-  const provider = providers[id];
-  const activeName = store.active(id);
-  const live = await provider.readActive();
-  const stored = activeName ? store.get(id, activeName) : undefined;
-  // Whether the live session matches what we believe is active.
-  let inSync: boolean | null = null;
-  let descriptor: AccountDescriptor | null = null;
-  if (stored) {
-    inSync = fingerprint(live) === fingerprint(stored.credential);
-    descriptor = provider.describe(stored.credential);
-  }
-  return { provider, activeName, live, inSync, descriptor };
-}
-
-/** Show the active account (and live-sync status) for the given providers. */
-export async function runCurrent(ids: ProviderId[], options: CurrentOptions = {}): Promise<void> {
-  const store = await Store.load();
-  // Pull in any live refresh / re-auth first (skip for --json, which should be
-  // a pure read for scripts).
-  if (!options.json) {
-    for (const id of ids) {
-      await reconcileActive(providers[id], store);
+/** Machine-readable status for one provider. A pure read: nothing is written. */
+async function statusJson(store: Store, provider: Provider) {
+  const activeName = store.active(provider.id) ?? null;
+  try {
+    const { credential, match } = await inspectLive(provider, store);
+    const stored = activeName ? store.get(provider.id, activeName) : undefined;
+    const source = credential ?? stored?.credential;
+    const descriptor = source ? provider.describe(source) : undefined;
+    return {
+      provider: provider.id,
+      active: activeName,
+      loggedIn: credential !== null,
+      inSync: credential
+        ? match?.name === activeName && JSON.stringify(credential) === JSON.stringify(match?.credential)
+        : null,
+      authState: descriptor ? classifyAuth(descriptor) : null,
+      expiresAt: descriptor?.expiresAt ?? null,
+      refreshExpiresAt: descriptor?.refreshExpiresAt ?? null,
+      live: credential
+        ? { email: descriptor?.email ?? null, saved: match !== undefined, name: match?.name ?? null }
+        : null,
+      homes: store
+        .list(provider.id)
+        .filter((account) => account.home)
+        .map((account) => ({ name: account.name, home: account.home })),
+    };
+  } catch (error) {
+    if (!isToguruError(error)) {
+      throw error;
     }
+    return { provider: provider.id, active: activeName, error: error.message };
   }
-  const results = await Promise.all(ids.map((id) => describeProvider(store, id)));
+}
 
-  if (options.json) {
-    logger.json(
-      results.map((r) => ({
-        provider: r.provider.id,
-        active: r.activeName ?? null,
-        loggedIn: r.live !== null,
-        inSync: r.inSync,
-        authState: r.descriptor ? classifyAuth(r.descriptor) : null,
-        expiresAt: r.descriptor?.expiresAt ?? null,
-      })),
-    );
+/** Human status for one provider, after reconciling it with the live session. */
+async function printStatus(store: Store, provider: Provider): Promise<void> {
+  logger.out(providerHeading(provider));
+  let state: LiveState;
+  try {
+    state = await reconcile(provider, store);
+  } catch (error) {
+    if (!isToguruError(error)) {
+      throw error;
+    }
+    logger.out(`  ${ink.beni(mark.error)} ${error.message}`);
+    if (error.hint) {
+      logger.out(ink.sumi(`    ${mark.hint} ${error.hint}`));
+    }
     return;
   }
 
-  for (const { provider, activeName, live, inSync, descriptor } of results) {
-    const head = pc.bold(pc.cyan(provider.displayName));
-    if (!activeName) {
-      const note = live ? pc.dim("(logged in, not saved — run `add`)") : pc.dim("(no active account)");
-      logger.out(`${head}: ${note}`);
-      continue;
+  if (state.kind === "logged-out") {
+    logger.out(ink.sumi(`  ${mark.idle} nobody signed in · ログアウト中`));
+  } else if (state.kind === "unsaved") {
+    const { descriptor } = state;
+    logger.out(`  ${ink.yuzu(mark.live)} ${ink.bold(descriptor.email ?? "unknown account")} ${ink.sumi("· live, not saved yet")}`);
+    logger.out(`    ${authSummary(classifyAuth(descriptor), descriptor)}`);
+    logger.out(ink.sumi(`    ${mark.hint} save it: tg add ${provider.id}`));
+  } else {
+    const account = store.get(provider.id, state.name);
+    if (account) {
+      const descriptor = provider.describe(account.credential);
+      const auth = classifyAuth(descriptor);
+      logger.out(`  ${accountRow(provider, account, { live: true, width: 0 })}`);
+      logger.out(`    ${authSummary(auth, descriptor)}`);
+      if (state.adopted) {
+        logger.out(ink.sumi(`    ${mark.refresh} switched outside tg — now marked active`));
+      } else if (state.captured) {
+        logger.out(ink.sumi(`    ${mark.refresh} captured a fresh token from the live session`));
+      }
+      if (auth === "needs-reauth" || auth === "reauth-soon") {
+        logger.out(ink.sumi(`    ${mark.hint} sign in again: tg ${provider.id} auth ${account.name}`));
+      }
     }
-    let status = "";
-    if (inSync === false) {
-      // Same-account drift was already auto-synced above, so a remaining
-      // mismatch means the live session is a *different* account.
-      status = pc.yellow(" (live session is a different account — run `tg add` to save it)");
-    } else if (!live) {
-      status = pc.yellow(" (no live session detected)");
+  }
+
+  // Account homes are live too, each in its own config dir.
+  for (const account of store.list(provider.id).filter((candidate) => candidate.home)) {
+    await captureHome(provider, store, account);
+    const fresh = store.get(provider.id, account.name) ?? account;
+    const descriptor = provider.describe(fresh.credential);
+    logger.out(`  ${accountRow(provider, fresh, { live: false, width: 0 })} ${ink.sumi("· own home")}`);
+    logger.out(`    ${authSummary(classifyAuth(descriptor), descriptor)}`);
+  }
+
+  // One line about the rest, so problems with idle accounts aren't hidden.
+  const others = store
+    .list(provider.id)
+    .filter((account) => !account.home && (state.kind !== "saved" || account.name !== state.name));
+  if (others.length > 0) {
+    const stale = others.filter((account) => classifyAuth(provider.describe(account.credential)) === "needs-reauth");
+    const note = stale.length > 0 ? ink.beni(` · ${stale.length} need${stale.length === 1 ? "s" : ""} re-auth`) : "";
+    logger.out(ink.sumi(`    + ${others.length} more saved${note}`));
+  }
+}
+
+/** Show the live account (and auth health) for the given providers. */
+export async function runCurrent(providers: readonly Provider[], options: CurrentOptions = {}): Promise<void> {
+  const store = await Store.load();
+  if (options.json) {
+    const rows = [];
+    for (const provider of providers) {
+      rows.push(await statusJson(store, provider));
     }
-    logger.out(`${head}: ${pc.green(activeName)}${status}`);
-    if (descriptor) {
-      logger.out(`  ${authSummary(classifyAuth(descriptor), descriptor.expiresAt)}`);
+    logger.json(rows);
+    return;
+  }
+  logger.out(`${banner()}\n${await keeperLine()}\n`);
+  for (const [index, provider] of providers.entries()) {
+    if (index > 0) {
+      logger.out("");
     }
+    await printStatus(store, provider);
   }
 }
 
 export function currentCommand(): Command {
   return new Command("current")
     .alias("status")
-    .description("Show the active account for each provider")
-    .argument("[provider]", "limit to claude or codex")
+    .description("Show the live account for each provider (then open the hub on a terminal)")
+    .argument("[provider]", `limit to one ${PROVIDER_ARG}`)
     .option("--json", "output machine-readable JSON", false)
     .action(async (providerArg: string | undefined, opts: CurrentOptions) => {
-      const ids = providerArg ? [getProvider(providerArg).id] : providerIds;
-      await runCurrent(ids, opts);
-      // On an interactive terminal, drop into the management hub.
-      const interactive = !opts.json && Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY);
-      if (interactive) {
+      await runCurrent(providersFor(providerArg), opts);
+      if (!opts.json && canPrompt()) {
         logger.out("");
-        await runManage();
+        await runManage({ banner: false });
       }
     });
 }
