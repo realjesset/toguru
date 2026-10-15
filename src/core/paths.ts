@@ -75,12 +75,10 @@ function claudeEnv(slot?: Slot): { configDir: string | undefined; secure: string
   };
 }
 
-/**
- * Claude Code's config directory (`CLAUDE_CONFIG_DIR`, default `~/.claude`),
- * NFC-normalized exactly like Claude Code does before hashing it.
- */
+/** Claude Code's config directory (`CLAUDE_CONFIG_DIR`, default `~/.claude`), resolved. */
 export function claudeDir(slot?: Slot): string {
-  return (claudeEnv(slot).configDir || path.join(os.homedir(), ".claude")).normalize("NFC");
+  const { configDir } = claudeEnv(slot);
+  return configDir ? path.resolve(configDir) : path.join(os.homedir(), ".claude");
 }
 
 /** File-based credentials used by Claude Code on Linux/Windows. */
@@ -98,7 +96,8 @@ export function claudeConfigFile(slot?: Slot): string {
   if (existsSync(legacy)) {
     return legacy;
   }
-  return path.join(claudeEnv(slot).configDir || os.homedir(), ".claude.json");
+  const { configDir } = claudeEnv(slot);
+  return configDir ? path.join(path.resolve(configDir), ".claude.json") : path.join(os.homedir(), ".claude.json");
 }
 
 /**
@@ -109,7 +108,8 @@ export function claudeConfigFile(slot?: Slot): string {
  */
 export function claudeKeychainService(slot?: Slot): string {
   const { configDir, secure } = claudeEnv(slot);
-  const hashed = secure !== undefined ? secure.normalize("NFC") : claudeDir(slot);
+  // Claude Code hashes the raw (NFC-normalized) string — no resolving or trimming.
+  const hashed = (secure ?? configDir ?? "").normalize("NFC");
   const unsuffixed = secure !== undefined ? !secure : !configDir;
   if (unsuffixed) {
     return "Claude Code-credentials";

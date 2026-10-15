@@ -1,6 +1,6 @@
 {
   "name": "toguru-cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "toguru — one CLI to swap between multiple Claude Code (Anthropic), Codex (OpenAI) and other CLI accounts.",
   "keywords": [
     "toguru",
