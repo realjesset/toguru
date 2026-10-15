@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store, validateStoreData } from "../src/core/store";
@@ -17,58 +17,60 @@ afterEach(async () => {
 });
 
 describe("Store", () => {
-  test("first added account becomes active automatically", async () => {
-    const store = await Store.load();
-    await store.upsert("codex", "alice", { token: "a" }, "alice@x.com");
-    expect(store.active("codex")).toBe("alice");
-    expect(store.list("codex")).toHaveLength(1);
-  });
-
-  test("adding a second account does not change the active one", async () => {
+  test("an account becomes active only when asked (active means 'live')", async () => {
     const store = await Store.load();
     await store.upsert("codex", "alice", { token: "a" });
-    await store.upsert("codex", "bob", { token: "b" });
-    expect(store.active("codex")).toBe("alice");
-    await store.setActive("codex", "bob");
+    expect(store.active("codex")).toBeUndefined();
+    await store.upsert("codex", "bob", { token: "b" }, { activate: true });
     expect(store.active("codex")).toBe("bob");
   });
 
-  test("removing the active account reassigns active", async () => {
+  test("removing the active account clears active instead of pointing at a non-live one", async () => {
     const store = await Store.load();
-    await store.upsert("codex", "alice", { token: "a" });
+    await store.upsert("codex", "alice", { token: "a" }, { activate: true });
     await store.upsert("codex", "bob", { token: "b" });
-    await store.setActive("codex", "alice");
     await store.remove("codex", "alice");
-    expect(store.active("codex")).toBe("bob");
+    expect(store.active("codex")).toBeUndefined();
   });
 
   test("rename preserves active status and rejects collisions", async () => {
     const store = await Store.load();
-    await store.upsert("claude", "old", { token: "x" });
+    await store.upsert("claude", "old", { token: "x" }, { activate: true });
     await store.rename("claude", "old", "new");
     expect(store.active("claude")).toBe("new");
     expect(store.get("claude", "old")).toBeUndefined();
 
     await store.upsert("claude", "other", { token: "y" });
-    let collided = false;
-    try {
-      await store.rename("claude", "other", "new");
-    } catch {
-      collided = true;
-    }
-    expect(collided).toBe(true);
+    await expect(store.rename("claude", "other", "new")).rejects.toThrow();
   });
 
-  test("persists across reloads", async () => {
+  test("names that collide with Object.prototype members are ordinary accounts", async () => {
     const store = await Store.load();
-    await store.upsert("codex", "alice", { token: "a" }, "alice@x.com");
+    expect(store.get("codex", "toString")).toBeUndefined();
+    expect(store.has("codex", "constructor")).toBe(false);
+    await store.upsert("codex", "__proto__", { token: "p" });
+    await store.upsert("codex", "constructor", { token: "c" });
 
     const reloaded = await Store.load();
-    expect(reloaded.get("codex", "alice")?.label).toBe("alice@x.com");
-    expect(reloaded.active("codex")).toBe("alice");
+    expect(reloaded.list("codex").map((a) => a.name)).toEqual(["__proto__", "constructor"]);
+    expect(reloaded.get("codex", "__proto__")?.credential).toEqual({ token: "p" });
   });
 
-  test("merge respects the overwrite flag", async () => {
+  test("a mutation re-reads the file, so another process's write survives", async () => {
+    const mine = await Store.load();
+    const theirs = await Store.load();
+    await theirs.upsert("codex", "theirs", { token: "t" });
+    await mine.upsert("codex", "mine", { token: "m" });
+
+    expect((await Store.load()).list("codex").map((a) => a.name)).toEqual(["mine", "theirs"]);
+  });
+
+  test("refuses a vault written by a newer schema instead of silently rewriting it", async () => {
+    await writeFile(join(dir, "store.json"), JSON.stringify({ version: 99, providers: {} }));
+    await expect(Store.load()).rejects.toThrow(/newer/);
+  });
+
+  test("merge respects the overwrite flag and never marks imports active", async () => {
     const store = await Store.load();
     await store.upsert("codex", "alice", { token: "original" });
 
@@ -89,18 +91,17 @@ describe("Store", () => {
       },
     };
 
-    const skipped = await store.merge(incoming, false);
-    expect(skipped).toBe(0);
+    expect(await store.merge(incoming, false)).toBe(0);
     expect(store.get("codex", "alice")?.credential).toEqual({ token: "original" });
 
-    const imported = await store.merge(incoming, true);
-    expect(imported).toBe(1);
+    expect(await store.merge(incoming, true)).toBe(1);
     expect(store.get("codex", "alice")?.credential).toEqual({ token: "updated" });
+    expect(store.active("codex")).toBeUndefined();
   });
 });
 
-describe("validateStoreData (A5: untrusted import hardening)", () => {
-  test("accepts a well-formed export and normalizes it", () => {
+describe("validateStoreData (untrusted import hardening)", () => {
+  test("accepts a well-formed export, dropping its active marker", () => {
     const data = validateStoreData({
       version: 1,
       providers: {
@@ -113,7 +114,7 @@ describe("validateStoreData (A5: untrusted import hardening)", () => {
       },
     });
     expect(data.providers.codex?.accounts.alice?.credential).toEqual({ token: "a" });
-    expect(data.providers.codex?.active).toBe("alice");
+    expect(data.providers.codex?.active).toBeUndefined();
   });
 
   test("rejects non-objects and missing providers", () => {
@@ -142,13 +143,5 @@ describe("validateStoreData (A5: untrusted import hardening)", () => {
     expect(Object.keys(data.providers)).toEqual(["codex"]);
     expect(data.providers.codex?.accounts.good).toBeDefined();
     expect(data.providers.codex?.accounts.bad).toBeUndefined();
-  });
-
-  test("ignores an `active` pointer to a dropped account", () => {
-    const data = validateStoreData({
-      version: 1,
-      providers: { codex: { active: "bad", accounts: { bad: { label: "x" } } } },
-    });
-    expect(data.providers.codex?.active).toBeUndefined();
   });
 });

@@ -1,0 +1,203 @@
+#!/usr/bin/env node
+// Fake macOS `security` for toguru e2e tests. Stores generic passwords as JSON
+// `{"<service>|<account>": "<password>"}` in $FAKE_KEYCHAIN. Refuses to run
+// without $FAKE_KEYCHAIN so a misconfigured test can never reach the real keychain.
+"use strict";
+
+const fs = require("node:fs");
+const path = require("node:path");
+
+const KEYCHAIN = process.env.FAKE_KEYCHAIN;
+if (!KEYCHAIN) {
+  process.stderr.write("fake security: FAKE_KEYCHAIN is not set; refusing to run\n");
+  process.exit(99);
+}
+
+const NOT_FOUND =
+  "security: SecKeychainSearchCopyNext: The specified item could not be found in the keychain.\n";
+
+class ExitError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.code = code;
+  }
+}
+
+function load() {
+  try {
+    return JSON.parse(fs.readFileSync(KEYCHAIN, "utf8"));
+  } catch (error) {
+    if (error.code === "ENOENT") return {};
+    throw error;
+  }
+}
+
+function save(data) {
+  fs.mkdirSync(path.dirname(KEYCHAIN), { recursive: true });
+  const tmp = `${KEYCHAIN}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`, { mode: 0o600 });
+  fs.renameSync(tmp, KEYCHAIN);
+}
+
+// Options that take a value, per real `security` usage. Anything else is a flag.
+const VALUE_OPTS = new Set(["-s", "-a", "-l", "-D", "-j", "-c", "-C", "-T", "-G", "-r", "-X", "-k"]);
+
+function parse(args, command) {
+  const opts = { flags: new Set() };
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === "-w") {
+      // find-generic-password: `-w` is a flag (print password only).
+      // add-generic-password: `-w <password>`.
+      if (command === "add-generic-password" && i + 1 < args.length) {
+        opts.w = args[++i];
+      } else {
+        opts.flags.add("-w");
+      }
+    } else if (VALUE_OPTS.has(arg)) {
+      if (i + 1 >= args.length) throw new ExitError(2, `security: option ${arg} requires an argument\n`);
+      opts[arg.slice(1)] = args[++i];
+    } else if (arg.startsWith("-")) {
+      opts.flags.add(arg);
+    } else {
+      // Trailing positional = keychain path; ignored.
+      opts.keychain = arg;
+    }
+  }
+  return opts;
+}
+
+function key(opts) {
+  if (opts.s === undefined || opts.a === undefined) {
+    throw new ExitError(2, "fake security: both -s <service> and -a <account> are required\n");
+  }
+  return `${opts.s}|${opts.a}`;
+}
+
+/** Execute one command; returns stdout text or throws ExitError. */
+function execute(argv) {
+  const [command, ...rest] = argv;
+  switch (command) {
+    case "find-generic-password": {
+      const opts = parse(rest, command);
+      const k = key(opts);
+      const data = load();
+      if (!Object.prototype.hasOwnProperty.call(data, k)) throw new ExitError(44, NOT_FOUND);
+      if (opts.flags.has("-w")) return `${data[k]}\n`;
+      return (
+        `keychain: "${KEYCHAIN}"\nversion: 512\nclass: "genp"\nattributes:\n` +
+        `    "acct"<blob>="${opts.a}"\n    "svce"<blob>="${opts.s}"\n`
+      );
+    }
+    case "add-generic-password": {
+      const opts = parse(rest, command);
+      const k = key(opts);
+      let value;
+      if (opts.X !== undefined) {
+        if (!/^(?:[0-9a-fA-F]{2})*$/.test(opts.X)) throw new ExitError(2, "security: invalid hex for -X\n");
+        value = Buffer.from(opts.X, "hex").toString("utf8");
+      } else if (opts.w !== undefined) {
+        value = opts.w;
+      } else {
+        throw new ExitError(2, "fake security: add-generic-password needs -w <password> or -X <hex>\n");
+      }
+      const data = load();
+      if (Object.prototype.hasOwnProperty.call(data, k) && !opts.flags.has("-U")) {
+        throw new ExitError(
+          45,
+          "security: SecKeychainItemCreateFromContent (<default>): The specified item already exists in the keychain.\n",
+        );
+      }
+      data[k] = value;
+      save(data);
+      return "";
+    }
+    case "delete-generic-password": {
+      const opts = parse(rest, command);
+      const k = key(opts);
+      const data = load();
+      if (!Object.prototype.hasOwnProperty.call(data, k)) throw new ExitError(44, NOT_FOUND);
+      delete data[k];
+      save(data);
+      return `password has been deleted.\n`;
+    }
+    default:
+      throw new ExitError(2, `fake security: unsupported command ${JSON.stringify(command)}\n`);
+  }
+}
+
+/** Shell-like tokenizer: whitespace splits; double/single quotes group; backslash escapes. */
+function tokenize(line) {
+  const tokens = [];
+  let current = "";
+  let inToken = false;
+  let quote = null;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (quote) {
+      if (ch === quote) {
+        quote = null;
+      } else if (ch === "\\" && quote === '"' && i + 1 < line.length) {
+        current += line[++i];
+      } else {
+        current += ch;
+      }
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+      inToken = true;
+    } else if (ch === "\\" && i + 1 < line.length) {
+      current += line[++i];
+      inToken = true;
+    } else if (/\s/.test(ch)) {
+      if (inToken) {
+        tokens.push(current);
+        current = "";
+        inToken = false;
+      }
+    } else {
+      current += ch;
+      inToken = true;
+    }
+  }
+  if (quote) throw new ExitError(2, "fake security: unterminated quote in -i input\n");
+  if (inToken) tokens.push(current);
+  return tokens;
+}
+
+/** Like the real `security -i`: always exits 0; failed commands only report on stderr. */
+function runInteractive() {
+  const input = fs.readFileSync(0, "utf8");
+  for (const line of input.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    let argv;
+    try {
+      argv = tokenize(line);
+    } catch (error) {
+      process.stderr.write(error.message);
+      continue;
+    }
+    if (argv[0] === "quit" || argv[0] === "exit") break;
+    try {
+      process.stdout.write(execute(argv));
+    } catch (error) {
+      if (!(error instanceof ExitError)) throw error;
+      process.stderr.write(error.message);
+    }
+  }
+  return 0;
+}
+
+function main() {
+  const argv = process.argv.slice(2);
+  if (argv[0] === "-i") return runInteractive();
+  try {
+    process.stdout.write(execute(argv));
+    return 0;
+  } catch (error) {
+    if (!(error instanceof ExitError)) throw error;
+    process.stderr.write(error.message);
+    return error.code;
+  }
+}
+
+process.exitCode = main();

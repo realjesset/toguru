@@ -1,0 +1,4 @@
+{
+  "//": "The repo root is \"type\": \"module\"; the extensionless fake bins here are CommonJS.",
+  "type": "commonjs"
+}

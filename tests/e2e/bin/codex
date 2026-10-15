@@ -1,0 +1,102 @@
+#!/usr/bin/env node
+// Fake Codex CLI for toguru e2e tests. Only `codex login`: writes
+// $CODEX_HOME/auth.json (default ~/.codex/auth.json) for $FAKE_LOGIN_AS, or an
+// API-key session with $FAKE_CODEX_APIKEY=1.
+"use strict";
+
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+
+function fail(message, code = 1) {
+  process.stderr.write(`fake codex: ${message}\n`);
+  process.exit(code);
+}
+
+function b64url(value) {
+  return Buffer.from(JSON.stringify(value)).toString("base64url");
+}
+
+function jwt(claims) {
+  return `${b64url({ alg: "none", typ: "JWT" })}.${b64url(claims)}.fake-sig`;
+}
+
+function derived(seed) {
+  return crypto.createHash("sha256").update(seed).digest("hex").slice(0, 24);
+}
+
+/** Write through symlinks, atomically. */
+function writeJson(file, data) {
+  let target = file;
+  try {
+    target = fs.realpathSync(file);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  const tmp = `${target}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`, { mode: 0o600 });
+  fs.renameSync(tmp, target);
+}
+
+function login() {
+  if (process.env.FAKE_LOGIN_FAIL === "1") fail("login failed (FAKE_LOGIN_FAIL=1)");
+  const home = process.env.HOME || os.homedir();
+  const dir = process.env.CODEX_HOME ? path.resolve(process.env.CODEX_HOME) : path.join(home, ".codex");
+  const file = path.join(dir, "auth.json");
+
+  if (process.env.FAKE_CODEX_APIKEY === "1") {
+    writeJson(file, { auth_mode: "apikey", OPENAI_API_KEY: "sk-test", tokens: null });
+    process.stdout.write("Logged in using an API key\n");
+    return;
+  }
+
+  const email = process.env.FAKE_LOGIN_AS;
+  if (!email) fail("FAKE_LOGIN_AS is required");
+  const now = Math.floor(Date.now() / 1000);
+  const accountId = process.env.FAKE_CODEX_ACCOUNT_ID || `acct-${derived(`account:${email}`)}`;
+  const idToken = jwt({
+    email,
+    email_verified: true,
+    sub: `auth0|${derived(`sub:${email}`)}`,
+    iat: now,
+    exp: now + 3600,
+    "https://api.openai.com/auth": {
+      chatgpt_plan_type: process.env.FAKE_PLAN || "plus",
+      chatgpt_user_id: `user-${derived(`user:${email}`)}`,
+      chatgpt_account_id: accountId,
+    },
+  });
+  const accessToken = jwt({
+    iat: now,
+    exp: now + 10 * 86_400,
+    jti: crypto.randomBytes(8).toString("hex"),
+    "https://api.openai.com/auth": { chatgpt_account_id: accountId },
+  });
+  writeJson(file, {
+    auth_mode: "chatgpt",
+    OPENAI_API_KEY: null,
+    tokens: {
+      id_token: idToken,
+      access_token: accessToken,
+      refresh_token: `rt_${crypto.randomBytes(16).toString("hex")}`,
+      account_id: accountId,
+    },
+    last_refresh: new Date().toISOString(),
+  });
+  process.stdout.write(`Successfully logged in as ${email}\n`);
+}
+
+const argv = process.argv.slice(2);
+if (argv[0] === "login") {
+  login();
+} else if (argv[0] === "--version") {
+  process.stdout.write("codex-cli 0.0.0-fake\n");
+} else if (argv[0] === "print-home") {
+  // Test hook: shows which CODEX_HOME a `tg run` session got.
+  process.stdout.write(`${process.env.CODEX_HOME ?? ""}\n`);
+  process.exit(Number(argv[1] ?? 0));
+} else {
+  fail(`unsupported invocation: ${JSON.stringify(argv)}`, 2);
+}

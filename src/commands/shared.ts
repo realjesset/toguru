@@ -1,47 +1,72 @@
-import { select } from "@inquirer/prompts";
-import pc from "picocolors";
-import { authTag, classifyAuth } from "../core/auth-status";
+import { keeperStatus } from "../core/keeper";
 import type { Store, StoredAccount } from "../core/store";
-import { getProvider, providerIds, providers } from "../providers/registry";
+import { allProviders, getProvider } from "../providers/registry";
 import type { Provider } from "../providers/types";
+import { accountRow, nameWidth } from "../ui/format";
+import { choose } from "../ui/prompts";
+import { ink, mark, providerHeading } from "../ui/theme";
 import { ToguruError } from "../utils/errors";
 
+/** Argument help for provider positionals. */
+export const PROVIDER_ARG = "provider (claude | codex | a declared one — see `tg providers`)";
+
+/** One line about the background keeper, for the hub and status. */
+export async function keeperLine(): Promise<string> {
+  const { running, pid } = await keeperStatus();
+  return running
+    ? ink.muted(`  ${ink.green(mark.ok)} keeper is watching (pid ${pid})`)
+    : ink.muted(`  ${mark.idle} keeper is off — tg keeper start`);
+}
+
 /**
- * Resolve a provider from an optional argument, prompting interactively when it
- * is omitted.
+ * Resolve a provider from an optional argument (id or alias), prompting
+ * interactively when it is omitted.
  */
-export async function resolveProvider(id?: string): Promise<Provider> {
-  if (id) {
-    return getProvider(id);
+export async function resolveProvider(name?: string): Promise<Provider> {
+  if (name) {
+    return getProvider(name);
   }
-  const choice = await select<Provider["id"]>({
+  return choose({
     message: "Which provider?",
-    choices: providerIds.map((pid) => ({
-      name: providers[pid].displayName,
-      value: pid,
+    need: "a provider",
+    choices: allProviders().map((provider) => ({
+      name: providerHeading(provider),
+      value: provider,
+      short: provider.displayName,
     })),
   });
-  return providers[choice];
 }
 
-/** Format an account for display: `name (label) [active] <status>`. */
-export function formatAccount(account: StoredAccount, activeName?: string, statusTag?: string): string {
-  const parts = [pc.bold(account.name)];
-  if (account.label) {
-    parts.push(pc.dim(`(${account.label})`));
-  }
-  if (account.name === activeName) {
-    parts.push(pc.green("[active]"));
-  }
-  if (statusTag) {
-    parts.push(statusTag);
-  }
-  return parts.join(" ");
+/** Providers named by an optional argument: that one, or all of them. */
+export function providersFor(name: string | undefined): readonly Provider[] {
+  return name ? [getProvider(name)] : allProviders();
 }
 
-/** Local, no-network auth status tag for an account (empty when nothing to flag). */
-export function statusTagFor(provider: Provider, account: StoredAccount): string {
-  return authTag(classifyAuth(provider.describe(account.credential)));
+/**
+ * Find a saved account by name — or by its label/email when exactly one
+ * account matches, since names and emails are easy to mix up.
+ */
+export function findAccount(store: Store, provider: Provider, query: string): StoredAccount {
+  const exact = store.get(provider.id, query);
+  if (exact) {
+    return exact;
+  }
+  const wanted = query.toLowerCase();
+  const matches = store
+    .list(provider.id)
+    .filter(
+      (account) =>
+        account.label?.toLowerCase() === wanted ||
+        provider.describe(account.credential).email?.toLowerCase() === wanted,
+    );
+  const [only] = matches;
+  if (only && matches.length === 1) {
+    return only;
+  }
+  throw new ToguruError(
+    `No saved ${provider.displayName} account named "${query}".`,
+    `See your accounts with: tg list ${provider.id}`,
+  );
 }
 
 /**
@@ -52,20 +77,24 @@ export async function pickAccount(
   store: Store,
   provider: Provider,
   message: string,
+  filter: (account: StoredAccount) => boolean = () => true,
 ): Promise<StoredAccount> {
-  const accounts = store.list(provider.id);
+  const accounts = store.list(provider.id).filter(filter);
   if (accounts.length === 0) {
     throw new ToguruError(
-      `No saved ${provider.displayName} accounts yet.`,
-      `Add one with: toguru add ${provider.id}`,
+      `No saved ${provider.displayName} accounts to pick from.`,
+      `Log in and save one with: tg ${provider.id} auth`,
     );
   }
-  const activeName = store.active(provider.id);
-  const name = await select({
+  const active = store.active(provider.id);
+  const width = nameWidth(accounts);
+  const name = await choose({
     message,
+    need: "an account name",
     choices: accounts.map((account) => ({
-      name: formatAccount(account, activeName, statusTagFor(provider, account)),
+      name: accountRow(provider, account, { live: account.name === active, width }),
       value: account.name,
+      short: account.name,
     })),
   });
   // Selection always corresponds to an existing account.

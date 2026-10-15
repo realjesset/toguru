@@ -1,0 +1,126 @@
+#!/usr/bin/env node
+// Fake Claude Code CLI for toguru e2e tests. Only `claude auth login [--email E]`.
+// Logs in as $FAKE_LOGIN_AS: writes a fresh token payload (fake keychain on
+// darwin, ~/.claude/.credentials.json elsewhere) and `oauthAccount` into
+// ~/.claude.json, preserving every other key in both.
+"use strict";
+
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+
+/** Keychain service + config locations, mirroring Claude Code's CLAUDE_CONFIG_DIR rules. */
+function locations(home) {
+  const configDir = process.env.CLAUDE_CONFIG_DIR || "";
+  const suffix = configDir
+    ? `-${crypto.createHash("sha256").update(configDir.normalize("NFC")).digest("hex").slice(0, 8)}`
+    : "";
+  return {
+    service: `Claude Code-credentials${suffix}`,
+    credentialsFile: path.join(configDir || path.join(home, ".claude"), ".credentials.json"),
+    configFile: path.join(configDir || home, ".claude.json"),
+  };
+}
+
+function fail(message, code = 1) {
+  process.stderr.write(`fake claude: ${message}\n`);
+  process.exit(code);
+}
+
+function readJson(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+/** Write through symlinks (like most CLIs that open+truncate), atomically. */
+function writeJson(file, data) {
+  let target = file;
+  try {
+    target = fs.realpathSync(file);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  const tmp = `${target}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`, { mode: 0o600 });
+  fs.renameSync(tmp, target);
+}
+
+function derivedUuid(seed) {
+  const h = crypto.createHash("sha256").update(seed).digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
+function login(args) {
+  let email;
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] === "--email") email = args[++i];
+    else if (args[i].startsWith("--email=")) email = args[i].slice("--email=".length);
+  }
+  const home = process.env.HOME || os.homedir();
+  fs.writeFileSync(path.join(home, ".fake-claude-last-email"), email ?? "");
+
+  if (process.env.FAKE_LOGIN_FAIL === "1") fail("login failed (FAKE_LOGIN_FAIL=1)");
+  const as = process.env.FAKE_LOGIN_AS;
+  if (!as) fail("FAKE_LOGIN_AS is required");
+
+  const now = Date.now();
+  const oauth = {
+    accessToken: `sk-ant-oat01-${crypto.randomBytes(16).toString("hex")}`,
+    refreshToken: `sk-ant-ort01-${crypto.randomBytes(16).toString("hex")}`,
+    expiresAt: now + 8 * 3_600_000,
+    refreshTokenExpiresAt: now + 30 * 86_400_000,
+    scopes: ["user:inference", "user:profile", "user:sessions:claude_code"],
+    subscriptionType: process.env.FAKE_PLAN || "max",
+  };
+
+  const where = locations(home);
+  if (process.platform === "darwin") {
+    const keychain = process.env.FAKE_KEYCHAIN;
+    if (!keychain) fail("FAKE_KEYCHAIN is not set; refusing to touch the real keychain", 99);
+    const user = process.env.USER || os.userInfo().username;
+    const k = `${where.service}|${user}`;
+    const store = readJson(keychain) ?? {};
+    let payload = {};
+    if (typeof store[k] === "string") {
+      try {
+        payload = JSON.parse(store[k]);
+      } catch {
+        payload = {};
+      }
+    }
+    store[k] = JSON.stringify({ ...payload, claudeAiOauth: oauth });
+    writeJson(keychain, store);
+  } else {
+    const payload = readJson(where.credentialsFile) ?? {};
+    writeJson(where.credentialsFile, { ...payload, claudeAiOauth: oauth });
+  }
+
+  const config = readJson(where.configFile) ?? {};
+  config.oauthAccount = {
+    emailAddress: as,
+    accountUuid: process.env.FAKE_ACCOUNT_UUID || derivedUuid(`account:${as}`),
+    organizationUuid: process.env.FAKE_ORG_UUID || "org-personal",
+    organizationName: process.env.FAKE_ORG_NAME || `${as}'s Organization`,
+  };
+  writeJson(where.configFile, config);
+  process.stdout.write(`Logged in as ${as}\n`);
+}
+
+const argv = process.argv.slice(2);
+if (argv[0] === "auth" && argv[1] === "login") {
+  login(argv.slice(2));
+} else if (argv[0] === "--version" || argv[0] === "-v") {
+  process.stdout.write("0.0.0-fake (Claude Code)\n");
+} else if (argv[0] === "print-config-dir") {
+  // Test hook: shows which config dir a `tg run` session got.
+  process.stdout.write(`${process.env.CLAUDE_CONFIG_DIR ?? ""}\n`);
+  process.exit(Number(argv[1] ?? 0));
+} else {
+  fail(`unsupported invocation: ${JSON.stringify(argv)}`, 2);
+}
